@@ -92,6 +92,8 @@
         setTimeout(() => {
           curtain.classList.add("gone");
           document.dispatchEvent(new CustomEvent("loader:ready"));
+          // Demo only: replay so the preview keeps showing the loader.
+          if (!reduce) setTimeout(run, 2200);
         }, reduce ? 0 : EXIT_MS);
       }, HOLD_MS);
     }
