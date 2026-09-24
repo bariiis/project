@@ -1,20 +1,43 @@
 import "server-only";
-import type { Tier } from "@promptsite/compiler";
+import { cache } from "react";
+import { eq, schema } from "@promptsite/db";
+import { getSession } from "./auth";
+import { db } from "./db";
+import { planFromSubscriptions, type Plan } from "./plans";
 
-export type Plan = "free" | "pro" | "power";
+export { canUse, type Plan } from "./plans";
 
-const RANK: Record<Tier, number> = { free: 0, pro: 1, power: 2 };
-
-export function canUse(plan: Plan, tier: Tier): boolean {
-  return RANK[plan] >= RANK[tier];
+export interface Viewer {
+  user: { id: string; email: string; name: string; role: string } | null;
+  plan: Plan;
 }
 
-/**
- * The signed-in user's plan. Until auth and Lemon Squeezy land (phase 1) everyone is on the
- * free plan; `DEV_PLAN` overrides it outside production for local testing.
- */
-export async function getCurrentPlan(): Promise<Plan> {
+const ANONYMOUS: Viewer = { user: null, plan: "free" };
+
+function devOverride(): Plan | null {
   const dev = process.env.DEV_PLAN;
-  if (process.env.NODE_ENV !== "production" && (dev === "pro" || dev === "power")) return dev;
-  return "free";
+  return process.env.NODE_ENV !== "production" && (dev === "pro" || dev === "power") ? dev : null;
+}
+
+/** The signed-in user and the plan their subscriptions grant. Admins get every tier. */
+export const getViewer = cache(async (): Promise<Viewer> => {
+  if (!process.env.DATABASE_URL) return { ...ANONYMOUS, plan: devOverride() ?? "free" };
+
+  const session = await getSession();
+  if (!session) return { ...ANONYMOUS, plan: devOverride() ?? "free" };
+
+  const { id, email, name } = session.user;
+  const role = (session.user as { role?: string }).role ?? "user";
+  if (role === "admin") return { user: { id, email, name, role }, plan: "power" };
+
+  const subs = await db()
+    .select({ plan: schema.subscriptions.plan, status: schema.subscriptions.status, endsAt: schema.subscriptions.endsAt })
+    .from(schema.subscriptions)
+    .where(eq(schema.subscriptions.userId, id));
+
+  return { user: { id, email, name, role }, plan: devOverride() ?? planFromSubscriptions(subs) };
+});
+
+export async function getCurrentPlan(): Promise<Plan> {
+  return (await getViewer()).plan;
 }

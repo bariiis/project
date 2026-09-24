@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { compile, Target } from "@promptsite/compiler";
-import { canUse, getCurrentPlan } from "@/lib/access";
+import { canUse, getViewer } from "@/lib/access";
+import { compositionsInLastDay, DAILY_COMPOSITION_LIMIT, recordPrompt } from "@/lib/events";
 import { getEntry } from "@/lib/library";
 
 const Body = z.object({
@@ -23,15 +24,19 @@ export async function POST(request: Request) {
   const missing = entries.filter((e) => !e.entry).map((e) => e.slug);
   if (missing.length) return NextResponse.json({ error: "unknown_blocks", blocks: missing }, { status: 404 });
 
-  const plan = await getCurrentPlan();
+  const { user, plan } = await getViewer();
   const blocks = entries.map((e) => e.entry!.block);
   const locked = blocks.filter((b) => !canUse(plan, b.tier)).map((b) => b.slug);
   if (locked.length) {
     return NextResponse.json({ error: "upgrade_required", plan, blocks: locked }, { status: 402 });
   }
+  if (user && (await compositionsInLastDay(user.id)) >= DAILY_COMPOSITION_LIMIT) {
+    return NextResponse.json({ error: "rate_limited", limit: DAILY_COMPOSITION_LIMIT }, { status: 429 });
+  }
 
   try {
     const result = compile({ title, target, lang, blocks, slots });
+    await recordPrompt({ userId: user?.id ?? null, kind: "composition", target, blocks: slugs });
     return NextResponse.json({ prompt: result.prompt, warnings: result.warnings });
   } catch (error) {
     return NextResponse.json({ error: "compile_failed", message: (error as Error).message }, { status: 422 });

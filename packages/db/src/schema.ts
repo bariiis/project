@@ -89,6 +89,8 @@ export const subscriptions = pgTable(
     status: subscriptionStatusEnum("status").notNull(),
     renewsAt: timestamp("renews_at", { withTimezone: true }),
     endsAt: timestamp("ends_at", { withTimezone: true }),
+    /** Signed Lemon Squeezy customer-portal link, refreshed by every webhook. */
+    portalUrl: text("portal_url"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

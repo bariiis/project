@@ -2,9 +2,9 @@ import Link from "next/link";
 import { getLibrary } from "@/lib/library";
 
 const PLANS = [
-  { name: "Ücretsiz", price: "0 ₺", points: ["Seçili tam promptlar", "Canlı önizleme", "3 hedef: HTML, React, Next.js"] },
-  { name: "Pro", price: "Yakında", points: ["Tüm bloklar", "Builder: bölüm seç, birleşik prompt al", "Projeleri kaydet"], featured: true },
-  { name: "Power", price: "Yakında", points: ["Pro'daki her şey", "3D / WebGL / shader blokları", "Referans kaynak kod + MCP erişimi"] },
+  { name: "Ücretsiz", price: "0 ₺", href: "/giris?mod=kayit", cta: "Ücretsiz başla", points: ["Seçili tam promptlar", "Canlı önizleme", "3 hedef: HTML, React, Next.js"] },
+  { name: "Pro", price: process.env.PRICE_PRO_LABEL || "Yakında", href: "/api/billing/checkout?plan=pro", cta: "Pro'ya geç", points: ["Tüm bloklar", "Builder: bölüm seç, birleşik prompt al", "Projeleri kaydet"], featured: true },
+  { name: "Power", price: process.env.PRICE_POWER_LABEL || "Yakında", href: "/api/billing/checkout?plan=power", cta: "Power'a geç", points: ["Pro'daki her şey", "3D / WebGL / shader blokları", "Referans kaynak kod + MCP erişimi"] },
 ];
 
 export default function Home() {
@@ -58,6 +58,12 @@ export default function Home() {
                   <li key={p} className="flex gap-2"><span className="text-ember">·</span>{p}</li>
                 ))}
               </ul>
+              <a
+                href={plan.href}
+                className={`mt-8 block rounded-full py-3 text-center text-sm font-medium ${plan.featured ? "bg-ember text-ink" : "border border-line hover:border-paper/40"}`}
+              >
+                {plan.cta}
+              </a>
             </div>
           ))}
         </div>

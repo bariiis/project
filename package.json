@@ -7,6 +7,9 @@
     "build": "pnpm --filter web build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
-    "library:check": "pnpm --filter @promptsite/compiler library:check"
+    "library:check": "pnpm --filter @promptsite/compiler library:check",
+    "db:generate": "pnpm --filter @promptsite/db generate",
+    "db:migrate": "pnpm --filter @promptsite/db migrate",
+    "admin:grant": "pnpm --filter @promptsite/db admin:grant"
   }
 }

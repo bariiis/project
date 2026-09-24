@@ -5,7 +5,7 @@ import { CATEGORIES, TARGETS, type Category, type Target } from "@promptsite/com
 import { TierBadge } from "@/components/Badges";
 import { PromptActions } from "@/components/PromptActions";
 import { ScaledFrame } from "@/components/ScaledFrame";
-import type { Plan } from "@/lib/access";
+import type { Plan } from "@/lib/plans";
 import { CATEGORY_LABEL, TARGET_LABEL } from "@/lib/labels";
 import type { PublicBlock } from "@/lib/library";
 
