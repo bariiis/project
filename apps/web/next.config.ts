@@ -5,6 +5,9 @@ const config: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: resolve(import.meta.dirname, "../.."),
   transpilePackages: ["@promptsite/compiler"],
+  // Next gzips every response, videos included, which drops Content-Length and with it
+  // Range support. The proxy/CDN in front compresses text responses instead.
+  compress: false,
   // A CDN in front (e.g. Cloudflare) only answers Range requests from its cache, and it
   // won't cache files served with max-age=0, which breaks video seeking.
   async headers() {
