@@ -7,7 +7,7 @@ tier: free
 targets: [html, react, next]
 summary: >-
   Light call-to-action card with an infinite ember ticker band across its top edge, an oversized
-  serif question and a dark pill button whose label rolls to a duplicate on hover.
+  serif headline and a dark pill button whose label rolls to a duplicate on hover.
 
 tokens:
   colors:

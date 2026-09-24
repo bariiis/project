@@ -14,7 +14,7 @@ Load fonts with \`<link>\` tags to Google Fonts. Put every design token in CSS c
 A 3-section page, in this order:
 
 1. **Ember Field Hero** (hero, dark): Full-viewport dark hero over a canvas dot field that warms to ember orange around the pointer, with a bottom-left serif headline that rises word by word out of a clipping mask.
-2. **Ticker Band CTA** (cta, light): Light call-to-action card with an infinite ember ticker band across its top edge, an oversized serif question and a dark pill button whose label rolls to a duplicate on hover.
+2. **Ticker Band CTA** (cta, light): Light call-to-action card with an infinite ember ticker band across its top edge, an oversized serif headline and a dark pill button whose label rolls to a duplicate on hover.
 3. **Wordmark Footer** (footer, dark): Dark footer with a brand column, three link columns and a full-bleed wordmark fitted edge to edge that rises letter by letter as the page bottoms out.
 
 ## Design tokens
@@ -207,7 +207,7 @@ Load fonts with \`next/font/google\`. Put design tokens in \`@theme\` in \`app/g
 A 3-section page, in this order:
 
 1. **Ember Field Hero** (hero, dark): Full-viewport dark hero over a canvas dot field that warms to ember orange around the pointer, with a bottom-left serif headline that rises word by word out of a clipping mask.
-2. **Ticker Band CTA** (cta, light): Light call-to-action card with an infinite ember ticker band across its top edge, an oversized serif question and a dark pill button whose label rolls to a duplicate on hover.
+2. **Ticker Band CTA** (cta, light): Light call-to-action card with an infinite ember ticker band across its top edge, an oversized serif headline and a dark pill button whose label rolls to a duplicate on hover.
 3. **Wordmark Footer** (footer, dark): Dark footer with a brand column, three link columns and a full-bleed wordmark fitted edge to edge that rises letter by letter as the page bottoms out.
 
 ## Design tokens
@@ -405,7 +405,7 @@ One component per section under \`src/components/\`, composed in \`src/App.tsx\`
 A 3-section page, in this order:
 
 1. **Ember Field Hero** (hero, dark): Full-viewport dark hero over a canvas dot field that warms to ember orange around the pointer, with a bottom-left serif headline that rises word by word out of a clipping mask.
-2. **Ticker Band CTA** (cta, light): Light call-to-action card with an infinite ember ticker band across its top edge, an oversized serif question and a dark pill button whose label rolls to a duplicate on hover.
+2. **Ticker Band CTA** (cta, light): Light call-to-action card with an infinite ember ticker band across its top edge, an oversized serif headline and a dark pill button whose label rolls to a duplicate on hover.
 3. **Wordmark Footer** (footer, dark): Dark footer with a brand column, three link columns and a full-bleed wordmark fitted edge to edge that rises letter by letter as the page bottoms out.
 
 ## Design tokens
