@@ -1,0 +1,97 @@
+slug: trio-switcher-hero
+name: Trio Switcher Hero
+category: hero
+tone: dark
+moods: [cinematic, calm]
+tier: pro
+targets: [html, react, next]
+summary: >-
+  Full-screen hero for three items: the featured one fills the background under a huge serif name,
+  the other two sit as round cut-outs cropped by the screen edges, and clicking one swaps it in.
+
+tokens:
+  colors:
+    ink: "#0b0b0c"
+    paper: "#f2efe8"
+    muted: "#8a877f"
+    ember: "#ff5a1f"
+  fonts:
+    - { family: Instrument Serif, weights: [400], role: display }
+    - { family: Geist, weights: [400, 500], role: body }
+  radii:
+    pill: "999px"
+  easings:
+    out-expo: "cubic-bezier(0.16, 1, 0.3, 1)"
+
+slots:
+  - { key: eyebrow, label: Üst etiket, type: text, default: Destination }
+  - { key: cta_label, label: Buton metni, type: text, default: Plan the trip }
+  - { key: item_1_name, label: 1. öğe adı, type: text, default: Atlas }
+  - { key: item_1_lede, label: 1. öğe açıklaması, type: textarea, default: "A quiet desert range where the first light arrives an hour before the valleys. Trips leave every Friday." }
+  - { key: item_1_image, label: 1. öğe görseli, type: image, default: "", usage: item 1 background and round cut-out }
+  - { key: item_2_name, label: 2. öğe adı, type: text, default: Mira }
+  - { key: item_2_lede, label: 2. öğe açıklaması, type: textarea, default: "Salt flats and a sky that doubles itself after rain. Guided night walks, small groups only." }
+  - { key: item_2_image, label: 2. öğe görseli, type: image, default: "", usage: item 2 background and round cut-out }
+  - { key: item_3_name, label: 3. öğe adı, type: text, default: Soren }
+  - { key: item_3_lede, label: 3. öğe açıklaması, type: textarea, default: "A northern coast of basalt and cold surf. Stay in the cabins, swim if you dare." }
+  - { key: item_3_image, label: 3. öğe görseli, type: image, default: "", usage: item 3 background and round cut-out }
+
+structure: |
+  `<section>` height `100svh`, min-height `38rem`, `overflow: hidden`, `isolation: isolate`,
+  background `--color-ink`. Side padding 40px (20px below 768px). Item content is held as data
+  (name, lede, image per item) and rendered by script into one featured view and two side slots.
+
+  **Background**: three full-bleed layers, one per item (`z-index: -2`), each the item's image
+  (`cover`, centred) or its fallback. Only the featured layer is visible: opacity 0 → 1 over 900ms
+  ease while its scale settles 1.06 → 1 over 1400ms `--ease-out-expo`. Above them a veil
+  `radial-gradient(ellipse 70% 60% at 50% 55%, ink/.15, ink/.7)`.
+
+  **Centre column** (centred at 50% / 50%, width `min(640px, 100% - 2 × pad)`, centred text):
+  **{{eyebrow}}** (Geist 500 13px, uppercase, letter-spacing .22em, paper/.75); the featured name
+  as `<h1 aria-live="polite">` (margin-top 14px, Instrument Serif 400,
+  `font-size: clamp(3.5rem, 11vw, 10rem)`, line-height .88, letter-spacing -0.03em, inside an
+  `overflow: hidden` mask); a 48 × 2px `--color-ember` rule with 22px vertical margins; the featured
+  lede (max-width 44ch, 16px, line-height 1.55, paper/.8); a glossy pill **{{cta_label}}**
+  (margin-top 28px, height 52px, `padding: 0 28px`, `linear-gradient(180deg, #fff, #e7e3da)`, ink
+  text, Geist 500 15px, `box-shadow: 0 10px 30px rgb(0 0 0 / .35), inset 0 1px 0 #fff`, lifts 2px
+  on hover).
+
+  **Side slots**: two `<button>`s, each a circle `width: var(--orb)` (`min(34vw, 420px)`; 46vw
+  below 768px), vertically centred, pushed 42% of their width past the left and right screen
+  edges. The circle shows that item's image (or fallback) with
+  `box-shadow: inset -30px -40px 80px rgb(0 0 0 / .55), 0 30px 80px rgb(0 0 0 / .5)` so it reads
+  as a sphere, and scales to 1.04 on hover (700ms). A serif label (Instrument Serif,
+  `clamp(1.2rem, 2vw, 1.8rem)`) with the item name sits at the bottom inner side of each circle,
+  with an ember arrow pointing toward the centre (`← Name` on the left, `Name →` on the right).
+  `aria-label="Show <name>"`. Below 768px the slots move to 6% above the bottom and the centre
+  column to 42% from the top.
+
+  **Switching**: clicking a slot makes that item featured; the remaining two fill the slots in
+  item order (left = lower index). The name rises from `translateY(100%)` (800ms
+  `--ease-out-expo`), the lede fades in (500ms) and both circles re-enter from `scale(.9)`,
+  opacity 0. Fully reversible; item 1 is featured on load.
+
+  **Items**: **{{item_1_name}}** — {{item_1_lede}} (image `item_1_image`) ·
+  **{{item_2_name}}** — {{item_2_lede}} (image `item_2_image`) ·
+  **{{item_3_name}}** — {{item_3_lede}} (image `item_3_image`).
+
+  **Image fallback** per item (used for both the background and the circle): radial gradients
+  lit from 35% / 30% — item 1 `#f1c79a → #b8622e 45% → #3a1a0c 75% → #120806`, item 2
+  `#e9eef6 → #8aa1c0 → #2a3a55 → #0b1018`, item 3 `#cfe3d6 → #4f7d6a → #1c3029 → #070d0b`.
+  Preload only the featured image; load the others on first hover or click of their slot.
+
+  **Reduced motion:** instant swaps, no scale or rise.
+
+parameters: |
+  - Orb size min(34vw, 420px) (46vw < 768px), offset -42% past each edge
+  - Background fade 900ms, settle 1.06 → 1 over 1400ms out-expo
+  - Name rise 100% → 0, 800ms · lede fade 500ms · orbs from scale .9
+  - Name clamp(3.5rem, 11vw, 10rem) · ember rule 48 × 2px, margins 22px · CTA 52px
+
+variants:
+  react: |
+    Keep `featured` in state and derive the two side items from it; render the three background
+    layers once and toggle their `is-active` class so their transitions run.
+  next: |
+    Client component. Use `next/image` with `fill` and `priority` only for the featured background;
+    the side images are small and lazy.
