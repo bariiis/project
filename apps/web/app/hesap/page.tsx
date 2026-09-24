@@ -69,9 +69,11 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             {subs.map((s) => (
               <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
                 <div>
-                  <p className="font-medium">{PLAN[s.plan]} · {STATUS[s.status] ?? s.status}</p>
+                  <p className="font-medium">{PLAN[s.plan]} · {s.provider === "manual" ? (s.endsAt && s.endsAt <= new Date() ? "Sona erdi" : "Aktif") : STATUS[s.status] ?? s.status}</p>
                   <p className="text-muted">
-                    {s.status === "cancelled" || s.status === "expired" ? `Bitiş: ${fmt(s.endsAt)}` : `Yenileme: ${fmt(s.renewsAt)}`}
+                    {s.provider === "manual"
+                      ? `Yönetici tarafından verildi · ${s.endsAt ? `Bitiş: ${fmt(s.endsAt)}` : "süresiz"}`
+                      : s.status === "cancelled" || s.status === "expired" ? `Bitiş: ${fmt(s.endsAt)}` : `Yenileme: ${fmt(s.renewsAt)}`}
                   </p>
                 </div>
                 {s.portalUrl && (

@@ -46,7 +46,10 @@ export default async function AdminPage() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-      <h1 className="font-serif text-5xl tracking-tight">Admin</h1>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <h1 className="font-serif text-5xl tracking-tight">Admin</h1>
+        <a href="/admin/kullanicilar" className="rounded-full bg-paper px-5 py-2.5 text-sm font-medium text-ink">Kullanıcılar ve hesap aç</a>
+      </div>
 
       <section className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-5">
         {stat("Kullanıcı", users?.n ?? 0)}
