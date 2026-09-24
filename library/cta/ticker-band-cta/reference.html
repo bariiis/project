@@ -18,7 +18,7 @@
     --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--color-ink); font-family: "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100svh; display: grid; align-content: center; }
+  body { background: var(--color-ink); font-family: "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; min-height: 100svh; display: grid; grid-template-columns: minmax(0, 1fr); align-content: center; }
   a { color: inherit; text-decoration: none; }
   :focus-visible { outline: 2px solid var(--color-ember); outline-offset: 3px; }
 

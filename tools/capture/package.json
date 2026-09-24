@@ -1,0 +1,16 @@
+{
+  "name": "@promptsite/capture",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "site-capture": "./capture.mjs"
+  },
+  "scripts": {
+    "capture": "node capture.mjs",
+    "previews": "node previews.mjs"
+  },
+  "dependencies": {
+    "playwright": "1.56.1"
+  }
+}

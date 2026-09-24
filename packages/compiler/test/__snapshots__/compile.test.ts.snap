@@ -95,7 +95,8 @@ space-between, items-end; column below 768px with 32px gap):
 scaling in from \`scaleX(0)\` (origin left) over 1200ms starting 300ms after load.
 
 Smooth scrolling for the whole page uses Lenis (\`new Lenis({ smoothWheel: true })\` driven by a
-\`requestAnimationFrame\` loop).
+\`requestAnimationFrame\` loop). Load it with a dynamic \`import()\` and swallow failures: smooth
+scroll is an enhancement, and the hero must still split and animate if the CDN is unreachable.
 
 ### 2) Ticker Band CTA — \`cta\`
 
@@ -279,7 +280,8 @@ space-between, items-end; column below 768px with 32px gap):
 scaling in from \`scaleX(0)\` (origin left) over 1200ms starting 300ms after load.
 
 Smooth scrolling for the whole page uses Lenis (\`new Lenis({ smoothWheel: true })\` driven by a
-\`requestAnimationFrame\` loop).
+\`requestAnimationFrame\` loop). Load it with a dynamic \`import()\` and swallow failures: smooth
+scroll is an enhancement, and the hero must still split and animate if the CDN is unreachable.
 
 **a Next.js App Router project notes:**
 
@@ -476,7 +478,8 @@ space-between, items-end; column below 768px with 32px gap):
 scaling in from \`scaleX(0)\` (origin left) over 1200ms starting 300ms after load.
 
 Smooth scrolling for the whole page uses Lenis (\`new Lenis({ smoothWheel: true })\` driven by a
-\`requestAnimationFrame\` loop).
+\`requestAnimationFrame\` loop). Load it with a dynamic \`import()\` and swallow failures: smooth
+scroll is an enhancement, and the hero must still split and animate if the CDN is unreachable.
 
 **a Vite + React + TypeScript project notes:**
 

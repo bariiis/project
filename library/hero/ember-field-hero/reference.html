@@ -85,10 +85,11 @@
   </section>
 </main>
 <script type="module">
-  import Lenis from "lenis";
-
-  const lenis = new Lenis({ smoothWheel: true });
-  requestAnimationFrame(function raf(t) { lenis.raf(t); requestAnimationFrame(raf); });
+  // Smooth scroll is an enhancement: the hero must still animate if the CDN is unreachable.
+  import("lenis").then(({ default: Lenis }) => {
+    const lenis = new Lenis({ smoothWheel: true });
+    requestAnimationFrame(function raf(t) { lenis.raf(t); requestAnimationFrame(raf); });
+  }).catch(() => {});
 
   // Split headline words into clip-mask boxes with a running stagger.
   const STAGGER = 90, DELAY = 150;
