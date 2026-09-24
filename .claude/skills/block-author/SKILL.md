@@ -48,6 +48,10 @@ unique across the library.
      `textContent` is that value (wrap it in a `<span>` if it shares a parent with icons).
      Scripts that build DOM from slot text (word splits, tickers, wordmarks) must read it from
      that element at runtime and escape it or use DOM APIs, never inject it as HTML.
+   - media slots (`type: image` / `video`, with a `usage` line) mark their `<img>`/`<video>`
+     with `data-slot-src="<key>"` and ship **no src by default**. At runtime the block checks for
+     a src and, when there is none, renders a procedural fallback (canvas gradient, noise,
+     particles) so the block is complete without media. The preview only ever sets https URLs.
 5. **Write `block.yaml`** following `research/ANALYSIS.md` section 2:
    - `summary`: one sentence, used in the "What it is" list.
    - `structure`: DOM skeleton, every size (px/rem/clamp), copy, and each animation as

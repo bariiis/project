@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { isHttpsUrl, isMediaSlot } from "@promptsite/compiler";
 import { getEntry } from "@/lib/library";
 import { injectPreview } from "@/lib/preview";
 import { decodeSlots } from "@/lib/slot-encoding";
@@ -10,9 +11,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   const entry = getEntry(slug);
   if (!entry?.referencePath) return new Response("Not found", { status: 404 });
 
-  const allowed = new Set(entry.block.slots.map((s) => s.key));
+  const slots = new Map(entry.block.slots.map((s) => [s.key, s]));
+  // Unknown keys are dropped; media values must be https URLs (they become src attributes).
   const values = Object.fromEntries(
-    Object.entries(decodeSlots(new URL(request.url).searchParams.get("s"))).filter(([key]) => allowed.has(key)),
+    Object.entries(decodeSlots(new URL(request.url).searchParams.get("s"))).filter(([key, value]) => {
+      const slot = slots.get(key);
+      return slot && (!isMediaSlot(slot) || isHttpsUrl(value));
+    }),
   );
 
   return new Response(injectPreview(await readFile(entry.referencePath, "utf8"), slug, values), {

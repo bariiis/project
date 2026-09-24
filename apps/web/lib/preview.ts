@@ -8,6 +8,7 @@ function scriptLiteral(value: unknown): string {
 /**
  * Adds the builder's preview runtime to a block's reference.html:
  * - replaces the text of every `[data-slot="<key>"]` element with the user's value;
+ * - points every `[data-slot-src="<key>"]` image/video at the user's https URL;
  * - reports the height of the `[data-block]` root to the parent frame as `{ type: "ps:height" }`.
  *
  * It is a classic inline script at the end of <body>, so it runs before the page's deferred
@@ -16,8 +17,13 @@ function scriptLiteral(value: unknown): string {
 export function injectPreview(html: string, slug: string, values: SlotValues): string {
   const script = `<script>(() => {
   const values = ${scriptLiteral(values)};
-  for (const [key, text] of Object.entries(values)) {
-    for (const el of document.querySelectorAll('[data-slot="' + key + '"]')) el.textContent = text;
+  for (const [key, value] of Object.entries(values)) {
+    for (const el of document.querySelectorAll('[data-slot="' + key + '"]')) el.textContent = value;
+    if (!value.startsWith("https://")) continue;
+    for (const el of document.querySelectorAll('[data-slot-src="' + key + '"]')) {
+      el.setAttribute("src", value);
+      if (el instanceof HTMLVideoElement) el.load();
+    }
   }
   const root = document.querySelector("[data-block]");
   if (!root || window.parent === window) return;

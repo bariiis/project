@@ -340,7 +340,20 @@ export function Builder({
                               return (
                                 <label key={s.key} htmlFor={common.id} className="block text-xs text-muted">
                                   {s.label}
-                                  {s.type === "textarea" ? <textarea rows={3} {...common} /> : <input type={s.type === "url" ? "url" : "text"} {...common} />}
+                                  {s.type === "textarea" ? (
+                                    <textarea rows={3} {...common} />
+                                  ) : s.type === "image" || s.type === "video" ? (
+                                    <>
+                                      <input type="url" inputMode="url" placeholder={`https://… (${s.type === "video" ? "video" : "görsel"})`} {...common} />
+                                      <span className="mt-1 block text-[11px] text-muted/80">
+                                        {common.value && !common.value.startsWith("https://")
+                                          ? "Yalnızca https:// ile başlayan adresler kullanılır."
+                                          : "Boş bırakırsan blok kendi yedek görüntüsünü kullanır."}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <input type={s.type === "url" ? "url" : "text"} {...common} />
+                                  )}
                                 </label>
                               );
                             })}

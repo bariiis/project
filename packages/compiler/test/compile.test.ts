@@ -93,12 +93,50 @@ describe("compile", () => {
   });
 });
 
+describe("media slots", () => {
+  const withVideo = () =>
+    block({
+      slots: [
+        { key: "headline", label: "Headline", type: "text", default: "Hello" },
+        { key: "bg_video", label: "Video", type: "video", default: "", usage: "background loop" },
+      ],
+    });
+
+  it("require a usage and an empty or https default", () => {
+    const base = { key: "v", label: "V", type: "video" };
+    expect(BlockSchema.safeParse({ ...block(), slots: [{ ...base, default: "" }] }).success).toBe(false);
+    expect(BlockSchema.safeParse({ ...block(), structure: "x", slots: [{ ...base, default: "http://x.dev/a.mp4", usage: "u" }] }).success).toBe(false);
+    expect(BlockSchema.safeParse({ ...block(), structure: "x", slots: [{ ...base, default: "https://x.dev/a.mp4", usage: "u" }] }).success).toBe(true);
+  });
+
+  it("list a provided https URL in the Assets table", () => {
+    const b = withVideo();
+    const { prompt, assets } = compile({ title: "T", target: "html", blocks: [b], slots: { "test-hero": { bg_video: "https://cdn.example.com/loop.mp4" } } });
+    expect(assets).toContainEqual(expect.objectContaining({ key: "bg_video", kind: "video", url: "https://cdn.example.com/loop.mp4" }));
+    expect(prompt).toContain("| `bg_video` | video | Test Hero: background loop | https://cdn.example.com/loop.mp4 |");
+    expect(prompt).not.toContain("_not provided_");
+  });
+
+  it("mark missing or unsafe media as not provided and ask for the fallback", () => {
+    const b = withVideo();
+    const empty = compile({ title: "T", target: "html", blocks: [b] });
+    expect(empty.prompt).toContain("| `bg_video` | video | Test Hero: background loop | _not provided_ |");
+    expect(empty.prompt).toContain("render the procedural fallback");
+    const unsafe = compile({ title: "T", target: "html", blocks: [b], slots: { "test-hero": { bg_video: "javascript:alert(1)" } } });
+    expect(unsafe.prompt).not.toContain("javascript:");
+    expect(unsafe.warnings).toContain("test-hero.bg_video: ignored non-https media URL");
+  });
+});
+
 describe("checkReference", () => {
   it("requires a data-block root and one data-slot per slot", () => {
     const b = block();
     expect(checkReference('<section data-block><h1 data-slot="headline">Hi</h1></section>', b)).toEqual([]);
     expect(checkReference('<section><h1 data-slot="headline">Hi</h1></section>', b)).toEqual(["missing a data-block root element"]);
     expect(checkReference("<section data-block><h1>Hi</h1></section>", b)).toEqual(['no element marks slot "headline" (data-slot)']);
+    const media = block({ structure: "x", slots: [{ key: "bg_video", label: "V", type: "video", default: "", usage: "u" }] });
+    expect(checkReference('<section data-block><video data-slot-src="bg_video"></video></section>', media)).toEqual([]);
+    expect(checkReference('<section data-block><video data-slot="bg_video"></video></section>', media)).toEqual(['no element marks slot "bg_video" (data-slot-src)']);
   });
 });
 
@@ -111,13 +149,22 @@ describe("library", () => {
   });
 
   it("composes hero + cta + footer for every target without token conflicts", () => {
-    const pick = (category: string) => entries.find((e) => e.block.category === category)!.block;
-    const blocks = [pick("hero"), pick("cta"), pick("footer")];
+    const pick = (slug: string) => entries.find((e) => e.block.slug === slug)!.block;
+    const blocks = [pick("ember-field-hero"), pick("ticker-band-cta"), pick("wordmark-footer")];
     for (const target of TARGETS) {
       const result = compile({ title: "Northwind", target, blocks });
       expect(result.warnings).toEqual([]);
       expect(result.prompt).not.toMatch(/\{\{\s*[a-z][a-z0-9_]*\s*\}\}/);
       expect(result.prompt).toMatchSnapshot(target);
+    }
+  });
+
+  it("composes every block of the library into one page without token conflicts", () => {
+    const blocks = entries.map((e) => e.block);
+    for (const target of TARGETS) {
+      const result = compile({ title: "Everything", target, blocks });
+      expect(result.warnings).toEqual([]);
+      expect(result.prompt).toContain("_not provided_"); // media slots without files
     }
   });
 });

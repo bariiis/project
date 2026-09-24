@@ -1,0 +1,96 @@
+slug: turntable-scrub-hero
+name: Turntable Scrub Hero
+category: hero
+tone: light
+moods: [technical, calm]
+tier: power
+targets: [html, react, next]
+summary: >-
+  Product hero where the pointer's horizontal position scrubs a 360° turntable video frame by
+  frame, with a serif product name, a hairline spec list and a degree readout on a scrub rail.
+
+tokens:
+  colors:
+    ink: "#0b0b0c"
+    paper: "#f2efe8"
+    muted: "#8a877f"
+    ember: "#ff5a1f"
+  fonts:
+    - { family: Instrument Serif, weights: [400], role: display }
+    - { family: Geist, weights: [400, 500], role: body }
+  easings:
+    out-expo: "cubic-bezier(0.16, 1, 0.3, 1)"
+
+slots:
+  - { key: eyebrow, label: Üst etiket, type: text, default: "Object 07 — Walnut & steel" }
+  - { key: product_name, label: Ürün adı, type: text, default: Orbit Lamp }
+  - { key: spec_1, label: Özellik 1, type: text, default: Hand-turned walnut base }
+  - { key: spec_2, label: Özellik 2, type: text, default: "2700K dimmable, 900 lm" }
+  - { key: spec_3, label: Özellik 3, type: text, default: Ships in 3 finishes }
+  - { key: hint, label: İpucu yazısı, type: text, default: Move across to turn }
+  - key: scrub_video
+    label: 360° dönüş videosu
+    type: video
+    default: ""
+    usage: one full turn of the product; encode all-intra (every frame a keyframe) for instant seeking
+
+structure: |
+  `<section>` height `100svh`, min-height `40rem`, `overflow: hidden`,
+  `touch-action: pan-y`, background
+  `radial-gradient(ellipse 60% 55% at 50% 48%, #fbfaf6 0%, var(--color-paper) 70%)`.
+  Side padding 40px (24px below 768px).
+
+  **Object stage**: a square `width: min(62vh, 78vw)` centred at 50% / 47% holding the
+  `scrub_video` asset (`object-fit: contain`, `muted playsinline preload="auto"`, no autoplay,
+  no loop on desktop). Under it a soft floor shadow: `min(40vh, 50vw)` × 22px,
+  `radial-gradient(ellipse, rgb(11 11 12 / .18), transparent 70%)`, `blur(4px)`.
+
+  **Scrub (fine pointers only, `(hover: hover) and (pointer: fine)`):**
+  - `progress = clamp((clientX - section.left) / section.width, 0, 1)`; the video should show
+    `progress × duration`, clamped to `duration - 1/30`.
+  - Coalesce seeks: pointer moves only store the target and schedule one `requestAnimationFrame`.
+    In the frame, skip if `readyState < 2`, `seeking` is true or `duration` is unknown; seek only
+    when the difference exceeds 1/60 s. On every `seeked` event schedule again, so the newest
+    target is applied as soon as the previous decode finishes. Never call `play()` on desktop.
+  - The video must be encoded **all-intra** (e.g. `ffmpeg -i in.mp4 -an -c:v libx264 -g 1
+    -crf 20 -pix_fmt yuv420p -movflags +faststart out.mp4`) or seeking stutters.
+
+  **Touch / coarse pointers:** set `loop = true` and `play()` (ignore rejection) so the product turns
+  by itself. **Reduced motion:** stay paused on the middle frame (progress 0.5).
+
+  **Fallback** with no video: a canvas (× `min(dpr, 2)`) draws a dotted torus of 64 × 18 points
+  (major radius 1, minor 0.38), rotated around Y by `progress × 2π` and tilted 0.5 rad around X,
+  projected with `p = 3 / (3 + z)`, scale 0.3 × width, painted back-to-front. Front dots are darker
+  and larger (`alpha .12 + .7k`, `radius (1.2 + 2.6k) × p`, `k = (1 - z) / 2`); the nearest dots
+  (`z < -0.6`) are ember at alpha `.35 + .6k`. The drawn angle eases toward the target with lerp 0.12. On touch it
+  auto-rotates by 0.0016 turns per frame. The same fallback takes over if a given video fires
+  `error` (unreachable or undecodable).
+
+  **Copy:**
+  - top-left 32px: **{{eyebrow}}**, Geist 500, 13px, uppercase, letter-spacing .14em, muted.
+  - bottom-left, 110px from the bottom: `<h1>` **{{product_name}}**, Instrument Serif 400,
+    `font-size: clamp(3rem, 7vw, 7rem)`, line-height .9, letter-spacing -0.03em, max-width 9ch.
+  - bottom-right, 110px from the bottom, width `min(280px, 40vw)`: a list of **{{spec_1}}**,
+    **{{spec_2}}**, **{{spec_3}}**, 14px, each row 12px vertical padding with 1px
+    `rgb(11 11 12 / .12)` rules above (and below the last). Hidden below 768px.
+
+  **Scrub rail** (44px from the bottom, full padding width, grid `auto 1fr auto`, gap 20px, 13px,
+  muted): **{{hint}}**, a 1px `rgb(11 11 12 / .15)` track with a 9px ember dot at
+  `left: progress × 100%`, and a tabular degree readout `round(progress × 360) mod 360` padded
+  to three digits with `°` (e.g. `180°`) in ink.
+
+parameters: |
+  - Object square min(62vh, 78vw) at 50% / 47% · shadow min(40vh, 50vw) × 22px
+  - Seek threshold 1/60 s, clamp duration - 1/30, rAF-coalesced, re-schedule on seeked
+  - Fallback torus 64 × 18 points, radii 1 / 0.38, tilt 0.5 rad, projection 3 / (3 + z), lerp 0.12, touch spin 0.0016 turn/frame
+  - Name bottom 110px, clamp(3rem, 7vw, 7rem) · specs width min(280px, 40vw)
+  - Rail bottom 44px, marker 9px
+
+variants:
+  react: |
+    Keep `progress`, the pending rAF id and the seeking state in refs; attach `seeked` and
+    `loadeddata` listeners in a `useEffect` and remove them on unmount. Never store progress in
+    state (it changes every pointer move).
+  next: |
+    Client component. Serve the all-intra MP4 from your storage with `Accept-Ranges` so the browser
+    can seek without downloading the whole file.

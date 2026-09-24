@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Liquid Reveal Hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --color-ink: #0b0b0c;
+    --color-paper: #f2efe8;
+    --color-muted: #8a877f;
+    --color-ember: #ff5a1f;
+    --radius-pill: 999px;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --pad: 40px;
+  }
+  @media (max-width: 767px) { :root { --pad: 24px; } }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--color-paper); color: var(--color-ink); font-family: "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  :focus-visible { outline: 2px solid var(--color-ember); outline-offset: 3px; }
+
+  .hero { position: relative; height: 100svh; min-height: 38rem; overflow: hidden; isolation: isolate; border-radius: 0 0 28px 28px; background: #d9d4c7; }
+  .hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .hero .base { z-index: -3; }
+  .hero .trail { z-index: -2; pointer-events: none; }
+  .hero img[data-slot-src] { display: none; }
+  .veil { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(to bottom, rgb(242 239 232 / 0.45), transparent 30%, transparent 62%, rgb(242 239 232 / 0.55)); }
+
+  .top { position: absolute; top: 28px; left: var(--pad); right: var(--pad); display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; }
+  .eyebrow::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--color-ember); }
+  .hint { display: inline-flex; align-items: center; gap: 10px; color: rgb(11 11 12 / 0.6); }
+  .hint i { width: 22px; height: 22px; border: 1px solid rgb(11 11 12 / 0.35); border-radius: 50%; display: grid; place-items: center; }
+  .hint i::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--color-ink); animation: nudge 1.8s var(--ease-out-expo) infinite; }
+  @keyframes nudge { 0%, 100% { transform: translate(-3px, 2px); } 50% { transform: translate(3px, -2px); } }
+
+  .content { position: absolute; left: var(--pad); right: var(--pad); bottom: 44px; display: flex; justify-content: space-between; align-items: flex-end; gap: 32px; }
+  @media (max-width: 767px) { .content { flex-direction: column; align-items: flex-start; } }
+  h1 { font-family: "Instrument Serif", serif; font-weight: 400; font-size: clamp(3.25rem, 8.5vw, 8.75rem); line-height: 0.92; letter-spacing: -0.03em; }
+  h1 .line { display: block; overflow: hidden; padding-bottom: 0.06em; }
+  h1 .line > span { display: inline-block; transform: translateY(105%); transition: transform 1000ms var(--ease-out-expo); }
+  h1 .line + .line > span { font-style: italic; transition-delay: 110ms; }
+  .ready h1 .line > span { transform: none; }
+  .cta { display: inline-flex; align-items: center; gap: 12px; height: 54px; padding: 0 8px 0 24px; border-radius: var(--radius-pill); background: var(--color-ink); color: var(--color-paper); font-weight: 500; font-size: 15px; opacity: 0; transform: translateY(12px); transition: opacity 700ms var(--ease-out-expo) 350ms, transform 700ms var(--ease-out-expo) 350ms; }
+  .cta b { width: 38px; height: 38px; border-radius: 50%; background: var(--color-paper); color: var(--color-ink); display: grid; place-items: center; transition: transform 300ms var(--ease-out-expo); }
+  .cta:hover b { transform: rotate(-45deg); }
+  .ready .cta { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    h1 .line > span, .cta { transition: none; transform: none; opacity: 1; }
+    .hint { display: none; }
+  }
+</style>
+</head>
+<body>
+<section class="hero" data-block>
+  <img data-slot-src="image_base" alt="" />
+  <img data-slot-src="image_reveal" alt="" />
+  <canvas class="base" aria-hidden="true"></canvas>
+  <canvas class="trail" aria-hidden="true"></canvas>
+  <div class="veil"></div>
+
+  <div class="top">
+    <span class="eyebrow" data-slot="eyebrow">Material study, 2026</span>
+    <span class="hint"><i></i><span data-slot="hint">Move to reveal</span></span>
+  </div>
+  <div class="content">
+    <h1><span class="line"><span data-slot="headline_1">Surface,</span></span><span class="line"><span data-slot="headline_2">then depth.</span></span></h1>
+    <a class="cta" href="#"><span data-slot="cta_label">See the work</span><b aria-hidden="true">→</b></a>
+  </div>
+</section>
+<script type="module">
+  const BRUSH = 160, DECAY = 0.02, IDLE_FRAMES = 120, MAX_STEPS = 60;
+  const hero = document.querySelector(".hero");
+  const baseCanvas = hero.querySelector(".base");
+  const trail = hero.querySelector(".trail");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  requestAnimationFrame(() => requestAnimationFrame(() => hero.classList.add("ready")));
+
+  // Media: the user's image if the slot has an https src, otherwise a procedural stand-in.
+  function loadImage(img) {
+    const src = img.getAttribute("src");
+    if (!src) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      const probe = new Image();
+      probe.onload = () => resolve(probe);
+      probe.onerror = () => resolve(null);
+      probe.src = src;
+    });
+  }
+  function fallback(w, h, dark) {
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const g = c.getContext("2d");
+    const bg = g.createLinearGradient(0, 0, w, h);
+    bg.addColorStop(0, dark ? "#141212" : "#e9e3d5");
+    bg.addColorStop(1, dark ? "#2a1208" : "#cfc6b3");
+    g.fillStyle = bg; g.fillRect(0, 0, w, h);
+    // Soft forms so the reveal reads as a different photograph, not a colour swap.
+    const forms = dark
+      ? [[0.72, 0.42, 0.34, "rgba(255,90,31,0.85)"], [0.3, 0.7, 0.28, "rgba(255,150,90,0.35)"], [0.55, 0.15, 0.2, "rgba(242,239,232,0.12)"]]
+      : [[0.7, 0.45, 0.36, "rgba(255,255,255,0.55)"], [0.28, 0.66, 0.3, "rgba(160,150,130,0.35)"], [0.5, 0.2, 0.18, "rgba(11,11,12,0.08)"]];
+    for (const [x, y, r, col] of forms) {
+      const rad = g.createRadialGradient(x * w, y * h, 0, x * w, y * h, r * Math.max(w, h));
+      rad.addColorStop(0, col); rad.addColorStop(1, "rgba(0,0,0,0)");
+      g.fillStyle = rad; g.fillRect(0, 0, w, h);
+    }
+    // Grain.
+    const noise = g.getImageData(0, 0, w, h);
+    for (let i = 0; i < noise.data.length; i += 4) {
+      const n = (Math.random() - 0.5) * (dark ? 18 : 12);
+      noise.data[i] += n; noise.data[i + 1] += n; noise.data[i + 2] += n;
+    }
+    g.putImageData(noise, 0, 0);
+    return c;
+  }
+  function drawCover(ctx, source, w, h) {
+    const sw = source.naturalWidth || source.width, sh = source.naturalHeight || source.height;
+    const s = Math.max(w / sw, h / sh);
+    ctx.drawImage(source, (w - sw * s) / 2, (h - sh * s) / 2, sw * s, sh * s);
+  }
+
+  const [baseImg, revealImg] = await Promise.all([...hero.querySelectorAll("img[data-slot-src]")].map(loadImage));
+  let dpr, W, H, radius, cover, brush, bctx, tctx;
+
+  function resize() {
+    dpr = Math.min(devicePixelRatio, 2);
+    const r = hero.getBoundingClientRect();
+    W = Math.round(r.width * dpr); H = Math.round(r.height * dpr);
+    for (const c of [baseCanvas, trail]) { c.width = W; c.height = H; }
+    bctx = baseCanvas.getContext("2d");
+    drawCover(bctx, baseImg ?? fallback(W, H, false), W, H);
+    cover = document.createElement("canvas");
+    cover.width = W; cover.height = H;
+    drawCover(cover.getContext("2d"), revealImg ?? fallback(W, H, true), W, H);
+    radius = BRUSH * dpr;
+    brush = document.createElement("canvas");
+    brush.width = brush.height = Math.ceil(radius * 2);
+    tctx = trail.getContext("2d");
+  }
+  resize();
+  new ResizeObserver(resize).observe(hero);
+  // Reduced motion: the base image stays static and no trail is painted.
+  const points = [];
+  let last = null, idle = IDLE_FRAMES + 1, running = false;
+
+  if (!reduce) addEventListener("pointermove", (e) => {
+    const r = hero.getBoundingClientRect();
+    const x = (e.clientX - r.left) * dpr, y = (e.clientY - r.top) * dpr;
+    if (x < -radius || y < -radius || x > W + radius || y > H + radius) { last = null; return; }
+    if (last) {
+      const dist = Math.hypot(x - last.x, y - last.y);
+      const n = Math.min(Math.ceil(dist / Math.max(radius * 0.3, 1)), MAX_STEPS);
+      for (let i = 1; i <= n; i++) points.push({ x: last.x + ((x - last.x) * i) / n, y: last.y + ((y - last.y) * i) / n });
+    } else points.push({ x, y });
+    last = { x, y };
+    if (!running) { running = true; requestAnimationFrame(tick); }
+  }, { passive: true });
+
+  function stamp(x, y) {
+    const b = brush.getContext("2d"), d = brush.width, c = d / 2;
+    b.globalCompositeOperation = "source-over";
+    b.clearRect(0, 0, d, d);
+    const grad = b.createRadialGradient(c, c, 0, c, c, c);
+    grad.addColorStop(0, "rgba(255,255,255,1)");
+    grad.addColorStop(0.5, "rgba(255,255,255,0.8)");
+    grad.addColorStop(1, "rgba(255,255,255,0)");
+    b.fillStyle = grad; b.fillRect(0, 0, d, d);
+    b.globalCompositeOperation = "source-in";
+    b.drawImage(cover, x - c, y - c, d, d, 0, 0, d, d);
+    tctx.globalCompositeOperation = "source-over";
+    tctx.drawImage(brush, x - c, y - c);
+  }
+
+  function tick() {
+    const drawing = points.length > 0;
+    idle = drawing ? 0 : idle + 1;
+    const fade = drawing ? DECAY : Math.min(DECAY + idle * 0.004, 0.5);
+    tctx.globalCompositeOperation = "destination-out";
+    tctx.fillStyle = `rgba(0,0,0,${fade})`;
+    tctx.fillRect(0, 0, W, H);
+    for (const p of points.splice(0)) stamp(p.x, p.y);
+    if (idle >= IDLE_FRAMES) { tctx.clearRect(0, 0, W, H); running = false; return; }
+    requestAnimationFrame(tick);
+  }
+</script>
+</body>
+</html>

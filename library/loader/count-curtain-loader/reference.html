@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Count Curtain Loader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Geist:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --color-ink: #0b0b0c;
+    --color-paper: #f2efe8;
+    --color-muted: #8a877f;
+    --color-ember: #ff5a1f;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-curtain: cubic-bezier(0.76, 0, 0.24, 1);
+    --pad: 40px;
+  }
+  @media (max-width: 767px) { :root { --pad: 24px; } }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--color-paper); color: var(--color-ink); font-family: "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+
+  /* Demo stage: in a real page the curtain is position:fixed over the whole document. */
+  .stage { position: relative; height: 100svh; min-height: 32rem; overflow: hidden; display: grid; place-items: center; }
+  .stage .page { font-family: "Instrument Serif", serif; font-size: clamp(2.5rem, 6vw, 5rem); letter-spacing: -0.02em; }
+  .replay { position: absolute; right: var(--pad); bottom: 24px; font: 500 13px/1 "Geist", sans-serif; color: var(--color-muted); background: none; border: 1px solid rgb(11 11 12 / 0.15); border-radius: 999px; padding: 10px 16px; cursor: pointer; }
+
+  .curtain { position: absolute; inset: 0; z-index: 10; background: var(--color-ink); color: var(--color-paper); transform: translateY(0); }
+  .curtain.leave { transform: translateY(-100%); transition: transform 900ms var(--ease-curtain); }
+  .curtain.gone { display: none; }
+
+  .brand { position: absolute; left: var(--pad); bottom: 96px; font-family: "Instrument Serif", serif; font-size: clamp(3.5rem, 12vw, 11rem); line-height: 0.9; letter-spacing: -0.03em; overflow: hidden; padding-bottom: 0.06em; }
+  .brand > span { display: inline-block; transform: translateY(105%); transition: transform 1000ms var(--ease-out-expo) 100ms; }
+  .curtain.in .brand > span { transform: none; }
+  .tagline { position: absolute; left: var(--pad); top: 32px; max-width: 26ch; font-size: 14px; line-height: 1.5; color: var(--color-muted); }
+
+  .count { position: absolute; right: var(--pad); bottom: 96px; font-size: clamp(3rem, 8vw, 7rem); font-weight: 400; line-height: 0.9; font-variant-numeric: tabular-nums; letter-spacing: -0.04em; }
+  .count small { font-size: 0.3em; color: var(--color-muted); margin-left: 0.1em; vertical-align: top; }
+  .bar { position: absolute; left: var(--pad); right: var(--pad); bottom: 64px; height: 1px; background: rgb(242 239 232 / 0.16); overflow: hidden; }
+  .bar i { position: absolute; inset: 0; background: var(--color-ember); transform: scaleX(0); transform-origin: left; }
+  .status { position: absolute; left: var(--pad); right: var(--pad); bottom: 32px; display: flex; justify-content: space-between; font-size: 12px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-muted); }
+
+  .curtain.leave .brand, .curtain.leave .count, .curtain.leave .tagline, .curtain.leave .status {
+    opacity: 0; transform: translateY(-16px); transition: opacity 500ms ease, transform 700ms var(--ease-out-expo);
+  }
+  @media (max-width: 767px) { .count { bottom: 150px; right: auto; left: var(--pad); } }
+  @media (prefers-reduced-motion: reduce) {
+    .brand > span { transition: none; transform: none; }
+    .curtain.leave { transition: none; }
+  }
+</style>
+</head>
+<body>
+<section class="stage" data-block>
+  <p class="page">Page content</p>
+  <button class="replay" type="button">Replay loader</button>
+
+  <div class="curtain" role="status" aria-live="polite" aria-label="Loading">
+    <p class="tagline" data-slot="tagline">Independent studio for brands that move.</p>
+    <p class="brand"><span data-slot="brand">Northwind</span></p>
+    <p class="count"><span class="num">000</span><small>%</small></p>
+    <div class="bar"><i></i></div>
+    <div class="status"><span data-slot="status_label">Loading</span><span>Est. 2026</span></div>
+  </div>
+</section>
+<script type="module">
+  const FILL_MS = 1400, HOLD_MS = 200, EXIT_MS = 900;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const stage = document.querySelector(".stage");
+  const curtain = stage.querySelector(".curtain");
+  const num = curtain.querySelector(".num");
+  const fill = curtain.querySelector(".bar i");
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+  function run() {
+    curtain.className = "curtain";
+    fill.style.transform = "scaleX(0)";
+    num.textContent = "000";
+    requestAnimationFrame(() => requestAnimationFrame(() => curtain.classList.add("in")));
+
+    const start = performance.now();
+    const duration = reduce ? 200 : FILL_MS;
+    function tick(now) {
+      const t = Math.min(1, (now - start) / duration);
+      const p = ease(t);
+      num.textContent = String(Math.round(p * 100)).padStart(3, "0");
+      fill.style.transform = `scaleX(${p})`;
+      if (t < 1) return requestAnimationFrame(tick);
+      setTimeout(() => {
+        curtain.classList.add("leave");
+        setTimeout(() => {
+          curtain.classList.add("gone");
+          document.dispatchEvent(new CustomEvent("loader:ready"));
+        }, reduce ? 0 : EXIT_MS);
+      }, HOLD_MS);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  stage.querySelector(".replay").addEventListener("click", run);
+  run();
+</script>
+</body>
+</html>

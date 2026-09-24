@@ -56,12 +56,24 @@ export const AssetSchema = z.object({
   usage: z.string().min(1),
 });
 
-export const SlotSchema = z.object({
-  key: z.string().regex(/^[a-z][a-z0-9_]*$/, "snake_case slot key"),
-  label: z.string().min(1),
-  type: z.enum(["text", "textarea", "url", "color"]),
-  default: z.string(),
-});
+export const MEDIA_SLOT_TYPES = ["image", "video"] as const;
+
+export const SlotSchema = z
+  .object({
+    key: z.string().regex(/^[a-z][a-z0-9_]*$/, "snake_case slot key"),
+    label: z.string().min(1),
+    type: z.enum(["text", "textarea", "url", "color", ...MEDIA_SLOT_TYPES]),
+    default: z.string(),
+    /** Media slots only: where the file is used, shown in the prompt's Assets table. */
+    usage: z.string().optional(),
+  })
+  .superRefine((slot, ctx) => {
+    if (!isMediaSlot(slot)) return;
+    if (!slot.usage) ctx.addIssue({ code: "custom", message: "media slots need a usage", path: ["usage"] });
+    if (slot.default && !isHttpsUrl(slot.default)) {
+      ctx.addIssue({ code: "custom", message: "media default must be empty or an https URL", path: ["default"] });
+    }
+  });
 
 export const BlockSchema = z
   .object({
@@ -110,6 +122,20 @@ export type Tier = z.infer<typeof Tier>;
 export type Font = z.infer<typeof FontSchema>;
 export type Asset = z.infer<typeof AssetSchema>;
 export type Library = z.infer<typeof LibrarySchema>;
+export type Slot = z.infer<typeof SlotSchema>;
+
+export function isMediaSlot(slot: { type: string }): boolean {
+  return (MEDIA_SLOT_TYPES as readonly string[]).includes(slot.type);
+}
+
+/** Media URLs end up in <img>/<video> src attributes, so only absolute https URLs are accepted. */
+export function isHttpsUrl(value: string): boolean {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
 
 const PLACEHOLDER = /\{\{\s*([a-z][a-z0-9_]*)\s*\}\}/g;
 

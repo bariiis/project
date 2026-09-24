@@ -1,4 +1,4 @@
-import { fillSlots, type Asset, type Block, type Font, type Library, type Target } from "./schema";
+import { fillSlots, isHttpsUrl, isMediaSlot, type Asset, type Block, type Font, type Library, type Target } from "./schema";
 
 export interface Composition {
   /** Page title used in the prompt heading. */
@@ -113,6 +113,40 @@ export function mergeAssets(blocks: Block[]): Asset[] {
   return [...byUrl.values()];
 }
 
+/** A media slot the user left empty: the prompt asks for their file or the block's fallback. */
+export interface MissingMedia {
+  key: string;
+  kind: "image" | "video";
+  usage: string;
+}
+
+/**
+ * Media slots (`image` / `video`) become Assets rows: the user's https URL when given,
+ * otherwise a "provide your own or build the fallback" row.
+ */
+export function mediaAssets(
+  blocks: Block[],
+  overrides: Record<string, Record<string, string>> = {},
+): { assets: Asset[]; missing: MissingMedia[]; warnings: string[] } {
+  const assets: Asset[] = [];
+  const missing: MissingMedia[] = [];
+  const warnings: string[] = [];
+  for (const block of blocks) {
+    for (const slot of block.slots.filter(isMediaSlot)) {
+      const kind = slot.type as "image" | "video";
+      const usage = `${block.name}: ${slot.usage ?? slot.label}`;
+      const value = (overrides[block.slug]?.[slot.key] ?? slot.default).trim();
+      if (value && isHttpsUrl(value)) {
+        assets.push({ key: slot.key, kind, url: value, alt: "", usage });
+      } else {
+        if (value) warnings.push(`${block.slug}.${slot.key}: ignored non-https media URL`);
+        missing.push({ key: slot.key, kind, usage });
+      }
+    }
+  }
+  return { assets, missing, warnings };
+}
+
 function googleFontsHref(fonts: Font[]): string {
   // Roman and italic cuts of one family must share a single `family=` param.
   const byFamily = new Map<string, Font[]>();
@@ -154,16 +188,26 @@ function libraryBlock(target: Target, libraries: Library[]): string {
   return libraries.map((l) => `- \`${l.npm}@^${l.version}\``).join("\n");
 }
 
-function assetTable(assets: Asset[]): string {
-  if (!assets.length) return "No external assets.";
-  const rows = assets.map((a) => `| \`${a.key}\` | ${a.kind} | ${a.usage} | ${a.url} |`);
-  return [
+function assetTable(assets: Asset[], missing: MissingMedia[]): string {
+  if (!assets.length && !missing.length) return "No external assets.";
+  const rows = [
+    ...assets.map((a) => `| \`${a.key}\` | ${a.kind} | ${a.usage} | ${a.url} |`),
+    ...missing.map((m) => `| \`${m.key}\` | ${m.kind} | ${m.usage} | _not provided_ |`),
+  ];
+  const lines = [
     "| Key | Kind | Used by | URL |",
     "|---|---|---|---|",
     ...rows,
     "",
     "Point every `<img>`, `<video>`, loader and background at these full URLs. Hero media loads eagerly, everything else lazily.",
-  ].join("\n");
+  ];
+  if (missing.length) {
+    lines.push(
+      "",
+      "Rows marked _not provided_ have no file yet: leave a clearly named constant for the URL at the top of the code, and until it is set render the procedural fallback that the section describes, so the page is complete without it.",
+    );
+  }
+  return lines.join("\n");
 }
 
 export function compile(composition: Composition): CompileResult {
@@ -177,7 +221,8 @@ export function compile(composition: Composition): CompileResult {
 
   const { tokens, warnings: tokenWarnings } = mergeTokens(blocks);
   const { libraries, warnings: libWarnings } = mergeLibraries(blocks);
-  const assets = mergeAssets(blocks);
+  const media = mediaAssets(blocks, composition.slots);
+  const assets = [...mergeAssets(blocks), ...media.assets];
   const brief = TARGET_BRIEF[target];
   const lang = composition.lang ?? "en";
 
@@ -238,7 +283,7 @@ export function compile(composition: Composition): CompileResult {
     ...(parameters.length ? ["## Fixed parameters (bake these in)", "", parameters.join("\n\n"), ""] : []),
     "## Assets",
     "",
-    assetTable(assets),
+    assetTable(assets, media.missing),
     "",
     "## Global rules",
     "",
@@ -249,5 +294,5 @@ export function compile(composition: Composition): CompileResult {
     "",
   ].join("\n");
 
-  return { prompt, tokens, libraries, assets, warnings: [...tokenWarnings, ...libWarnings] };
+  return { prompt, tokens, libraries, assets, warnings: [...tokenWarnings, ...libWarnings, ...media.warnings] };
 }

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Turntable Scrub Hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Geist:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --color-ink: #0b0b0c;
+    --color-paper: #f2efe8;
+    --color-muted: #8a877f;
+    --color-ember: #ff5a1f;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --pad: 40px;
+  }
+  @media (max-width: 767px) { :root { --pad: 24px; } }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--color-paper); color: var(--color-ink); font-family: "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+
+  .hero { position: relative; height: 100svh; min-height: 40rem; overflow: hidden; background: radial-gradient(ellipse 60% 55% at 50% 48%, #fbfaf6 0%, var(--color-paper) 70%); touch-action: pan-y; }
+  .object { position: absolute; left: 50%; top: 47%; width: min(62vh, 78vw); aspect-ratio: 1; transform: translate(-50%, -50%); }
+  .object video, .object canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; display: block; }
+  .object video:not([src]) { display: none; }
+  .object canvas[hidden] { display: none; }
+  .shadow { position: absolute; left: 50%; top: calc(47% + min(31vh, 39vw) - 2%); width: min(40vh, 50vw); height: 22px; transform: translateX(-50%); background: radial-gradient(ellipse at center, rgb(11 11 12 / 0.18), transparent 70%); filter: blur(4px); }
+
+  .eyebrow { position: absolute; top: 32px; left: var(--pad); font-size: 13px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-muted); }
+  .name { position: absolute; left: var(--pad); bottom: 110px; font-family: "Instrument Serif", serif; font-weight: 400; font-size: clamp(3rem, 7vw, 7rem); line-height: 0.9; letter-spacing: -0.03em; max-width: 9ch; }
+  .specs { position: absolute; right: var(--pad); bottom: 110px; width: min(280px, 40vw); list-style: none; font-size: 14px; }
+  .specs li { padding: 12px 0; border-top: 1px solid rgb(11 11 12 / 0.12); }
+  .specs li:last-child { border-bottom: 1px solid rgb(11 11 12 / 0.12); }
+  @media (max-width: 767px) { .specs { display: none; } .name { bottom: 120px; } }
+
+  .rail { position: absolute; left: var(--pad); right: var(--pad); bottom: 44px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 20px; font-size: 13px; color: var(--color-muted); }
+  .track { position: relative; height: 1px; background: rgb(11 11 12 / 0.15); }
+  .track i { position: absolute; top: -4px; left: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--color-ember); transform: translateX(-50%); }
+  .deg { font-variant-numeric: tabular-nums; color: var(--color-ink); min-width: 4ch; text-align: right; }
+</style>
+</head>
+<body>
+<section class="hero" data-block>
+  <p class="eyebrow" data-slot="eyebrow">Object 07 — Walnut & steel</p>
+  <div class="shadow" aria-hidden="true"></div>
+  <div class="object" aria-hidden="true">
+    <video data-slot-src="scrub_video" muted playsinline preload="auto"></video>
+    <canvas></canvas>
+  </div>
+  <h1 class="name" data-slot="product_name">Orbit Lamp</h1>
+  <ul class="specs">
+    <li data-slot="spec_1">Hand-turned walnut base</li>
+    <li data-slot="spec_2">2700K dimmable, 900 lm</li>
+    <li data-slot="spec_3">Ships in 3 finishes</li>
+  </ul>
+  <div class="rail" aria-hidden="true">
+    <span data-slot="hint">Move across to turn</span>
+    <div class="track"><i></i></div>
+    <span class="deg">000°</span>
+  </div>
+</section>
+<script type="module">
+  const hero = document.querySelector(".hero");
+  const video = hero.querySelector("video");
+  const canvas = hero.querySelector(".object canvas");
+  const marker = hero.querySelector(".track i");
+  const deg = hero.querySelector(".deg");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const fine = matchMedia("(hover: hover) and (pointer: fine)").matches;
+  let hasVideo = !!video.getAttribute("src");
+
+  let progress = 0.5; // 0..1 across the section
+  function showProgress(p) {
+    marker.style.left = `${p * 100}%`;
+    deg.textContent = `${String(Math.round(p * 360) % 360).padStart(3, "0")}°`;
+  }
+
+  // ---- Video scrub: pointer X → currentTime, seeks coalesced through rAF.
+  let frame = 0;
+  function seek() {
+    frame = 0;
+    if (video.readyState < 2 || video.seeking || !video.duration) return;
+    const t = Math.min(progress * video.duration, video.duration - 1 / 30);
+    if (Math.abs(video.currentTime - t) > 1 / 60) video.currentTime = t;
+  }
+  const schedule = () => { if (!frame) frame = requestAnimationFrame(seek); };
+
+  if (hasVideo) {
+    canvas.hidden = true;
+    // An unreachable or undecodable file falls back to the procedural object.
+    video.addEventListener("error", () => { hasVideo = false; video.removeAttribute("src"); canvas.hidden = false; startFallback(); }, { once: true });
+    video.addEventListener("seeked", schedule); // apply the newest target once a decode finishes
+    video.addEventListener("loadeddata", () => {
+      if (!fine && !reduce) { video.loop = true; video.play().catch(() => {}); }
+      else schedule();
+    });
+  }
+
+  // ---- Fallback object: a dotted torus rendered with a fake-3D projection.
+  let draw = () => {};
+  let drawFrame = 0;
+  const kick = () => { if (!drawFrame) drawFrame = requestAnimationFrame(draw); };
+  function startFallback() {
+    const ctx = canvas.getContext("2d");
+    const pts = [];
+    for (let i = 0; i < 64; i++) for (let j = 0; j < 18; j++) {
+      const u = (i / 64) * Math.PI * 2, v = (j / 18) * Math.PI * 2;
+      pts.push([(1 + 0.38 * Math.cos(v)) * Math.cos(u), 0.38 * Math.sin(v), (1 + 0.38 * Math.cos(v)) * Math.sin(u)]);
+    }
+    const size = () => { const r = canvas.getBoundingClientRect(), d = Math.min(devicePixelRatio, 2); canvas.width = r.width * d; canvas.height = r.height * d; };
+    size(); addEventListener("resize", size, { passive: true });
+    let shown = progress;
+    draw = () => {
+      drawFrame = 0;
+      shown += (progress - shown) * 0.12;
+      const W = canvas.width, H = canvas.height, s = W * 0.3, a = shown * Math.PI * 2, tilt = 0.5;
+      ctx.clearRect(0, 0, W, H);
+      const proj = pts.map(([x, y, z]) => {
+        const x1 = x * Math.cos(a) - z * Math.sin(a), z1 = x * Math.sin(a) + z * Math.cos(a);
+        const y1 = y * Math.cos(tilt) - z1 * Math.sin(tilt), z2 = y * Math.sin(tilt) + z1 * Math.cos(tilt);
+        const p = 3 / (3 + z2);
+        return [W / 2 + x1 * s * p, H / 2 + y1 * s * p, z2, p];
+      }).sort((m, n) => n[2] - m[2]);
+      for (const [x, y, z, p] of proj) {
+        const k = (1 - z) / 2; // front points darker and larger
+        ctx.fillStyle = z < -0.6 ? `rgba(255,90,31,${0.35 + k * 0.6})` : `rgba(11,11,12,${0.12 + k * 0.7})`;
+        ctx.beginPath(); ctx.arc(x, y, (1.2 + k * 2.6) * p * (W / 600), 0, Math.PI * 2); ctx.fill();
+      }
+      if (Math.abs(progress - shown) > 0.0005 || !fine) kick();
+    };
+    kick();
+    if (!fine && !reduce) (function spin() { progress = (progress + 0.0016) % 1; showProgress(progress); requestAnimationFrame(spin); })();
+  }
+  if (!hasVideo) startFallback();
+
+  // ---- Input: fine pointers scrub; touch devices auto-rotate (video loops, fallback spins).
+  if (fine && !reduce) {
+    hero.addEventListener("pointermove", (e) => {
+      const r = hero.getBoundingClientRect();
+      progress = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+      showProgress(progress);
+      if (hasVideo) schedule(); else kick();
+    }, { passive: true });
+  }
+  showProgress(progress);
+</script>
+</body>
+</html>

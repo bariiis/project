@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parse as parseYaml } from "yaml";
-import { BlockSchema, type Block } from "./schema";
+import { BlockSchema, isMediaSlot, type Block } from "./schema";
 
 export interface LibraryEntry {
   block: Block;
@@ -11,14 +11,15 @@ export interface LibraryEntry {
 }
 
 /**
- * The builder preview rewrites `[data-slot]` text and measures the `[data-block]` root, so every
- * reference implementation must mark both.
+ * The builder preview rewrites `[data-slot]` text, swaps `[data-slot-src]` media and measures the
+ * `[data-block]` root, so every reference implementation must mark all three.
  */
 export function checkReference(html: string, block: Block): string[] {
   const problems: string[] = [];
   if (!/\sdata-block[\s>=]/.test(html)) problems.push("missing a data-block root element");
   for (const slot of block.slots) {
-    if (!html.includes(`data-slot="${slot.key}"`)) problems.push(`no element marks slot "${slot.key}" (data-slot)`);
+    const attr = isMediaSlot(slot) ? "data-slot-src" : "data-slot";
+    if (!html.includes(`${attr}="${slot.key}"`)) problems.push(`no element marks slot "${slot.key}" (${attr})`);
   }
   return problems;
 }

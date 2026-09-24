@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { Window } from "happy-dom";
 import { injectPreview } from "../lib/preview";
 import { decodeSlots, encodeSlots } from "../lib/slot-encoding";
 
@@ -32,5 +33,25 @@ describe("injectPreview", () => {
     const runtime = out.slice(out.indexOf("<script>(() =>"));
     expect(runtime.match(/<\/script>/g)).toHaveLength(1);
     expect(runtime).toContain("\\u003c/script>");
+  });
+
+  it("fills text and swaps media sources only for https URLs when run in a page", () => {
+    const page =
+      '<body><section data-block><h1 data-slot="headline">Hi</h1>' +
+      '<video data-slot-src="bg_video"></video><img data-slot-src="photo"></section></body>';
+    const out = injectPreview(page, "demo", {
+      headline: "<b>Yeni</b>",
+      bg_video: "https://cdn.example.com/a.mp4",
+      photo: "javascript:alert(1)",
+    });
+    const window = new Window();
+    const document = window.document;
+    document.write(out.slice(0, out.indexOf("<script>")));
+    const code = out.slice(out.indexOf("<script>") + 8, out.lastIndexOf("</script>"));
+    new window.Function(code)();
+    expect(document.querySelector("h1")!.textContent).toBe("<b>Yeni</b>");
+    expect(document.querySelector("h1")!.children).toHaveLength(0);
+    expect(document.querySelector("video")!.getAttribute("src")).toBe("https://cdn.example.com/a.mp4");
+    expect(document.querySelector("img")!.hasAttribute("src")).toBe(false);
   });
 });
