@@ -14,6 +14,8 @@ export interface SubscriptionUpsert {
   status: SubscriptionStatus;
   renewsAt: Date | null;
   endsAt: Date | null;
+  /** When Lemon Squeezy last changed the subscription; orders out-of-order deliveries. */
+  providerUpdatedAt: Date | null;
   portalUrl: string | null;
 }
 
@@ -75,6 +77,7 @@ export function parseWebhook(payload: unknown, plans: Map<string, Plan>): Webhoo
       status,
       renewsAt: date(attrs.renews_at),
       endsAt: date(attrs.ends_at),
+      providerUpdatedAt: date(attrs.updated_at),
       portalUrl: urls.customer_portal ?? null,
     },
   };

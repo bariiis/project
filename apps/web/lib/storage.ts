@@ -35,6 +35,11 @@ export function objectKey(filename: string, now = new Date()): string {
   return `assets/${now.getUTCFullYear()}/${month}/${randomUUID().slice(0, 8)}-${stem}${ext ? `.${ext}` : ""}`;
 }
 
+/**
+ * The only file types that may be uploaded, keyed by extension. The browser's type is ignored:
+ * it is empty for 3D/HDR files and spoofable, and anything scriptable (SVG, HTML) must never be
+ * served from the public bucket.
+ */
 const EXT_TYPES: Record<string, string> = {
   glb: "model/gltf-binary",
   gltf: "model/gltf+json",
@@ -42,14 +47,21 @@ const EXT_TYPES: Record<string, string> = {
   exr: "image/x-exr",
   mp4: "video/mp4",
   webm: "video/webm",
+  mov: "video/quicktime",
   webp: "image/webp",
   avif: "image/avif",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  gif: "image/gif",
+  mp3: "audio/mpeg",
+  m4a: "audio/mp4",
+  wav: "audio/wav",
 };
 
-/** Browsers send empty or generic types for 3D/HDR files, so the extension decides first. */
-export function describeFile(filename: string, browserType: string) {
+export function describeFile(filename: string) {
   const ext = filename.split(".").pop()?.toLowerCase() ?? "";
-  const contentType = EXT_TYPES[ext] ?? (browserType || "application/octet-stream");
+  const contentType = EXT_TYPES[ext] ?? "application/octet-stream";
   let kind: "video" | "image" | "model" | "hdr" | "audio" | null = null;
   if (ext === "hdr" || ext === "exr") kind = "hdr";
   else if (contentType.startsWith("model/")) kind = "model";

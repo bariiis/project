@@ -1,4 +1,4 @@
-import { schema } from "@promptsite/db";
+import { schema, sql } from "@promptsite/db";
 import { parseWebhook, variantPlans, verifySignature } from "@/lib/billing/lemonsqueezy";
 import { db } from "@/lib/db";
 
@@ -25,7 +25,8 @@ export async function POST(request: Request) {
 
   const { subscription: sub } = outcome;
   const { userId, providerSubscriptionId, ...rest } = sub;
-  // Events can arrive out of order; every payload carries the full current state, so last write wins.
+  // Each payload is the subscription's state when the event was created. Retries can deliver an
+  // old "active" state after a newer "expired" one, so only apply events at least as new as ours.
   try {
     await db()
       .insert(schema.subscriptions)
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
       .onConflictDoUpdate({
         target: [schema.subscriptions.provider, schema.subscriptions.providerSubscriptionId],
         set: { ...rest, updatedAt: new Date() },
+        setWhere: sql`${schema.subscriptions.providerUpdatedAt} is null or excluded.provider_updated_at is null or excluded.provider_updated_at >= ${schema.subscriptions.providerUpdatedAt}`,
       });
   } catch (error) {
     // 23503: the user id in custom_data does not exist (deleted account, or another environment's checkout).

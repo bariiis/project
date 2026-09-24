@@ -91,6 +91,8 @@ export const subscriptions = pgTable(
     endsAt: timestamp("ends_at", { withTimezone: true }),
     /** Signed Lemon Squeezy customer-portal link, refreshed by every webhook. */
     portalUrl: text("portal_url"),
+    /** Lemon Squeezy's `updated_at` of the applied event; older (retried) events are ignored. */
+    providerUpdatedAt: timestamp("provider_updated_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

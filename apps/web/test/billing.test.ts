@@ -17,6 +17,7 @@ function payload(overrides: Record<string, unknown> = {}, meta: Record<string, u
         status: "active",
         renews_at: "2026-10-24T00:00:00.000000Z",
         ends_at: null,
+        updated_at: "2026-09-24T12:00:00.000000Z",
         urls: { customer_portal: "https://store.lemonsqueezy.com/billing?x=1" },
         ...overrides,
       },
@@ -51,6 +52,7 @@ describe("parseWebhook", () => {
         status: "active",
         renewsAt: new Date("2026-10-24T00:00:00.000Z"),
         endsAt: null,
+        providerUpdatedAt: new Date("2026-09-24T12:00:00.000Z"),
         portalUrl: "https://store.lemonsqueezy.com/billing?x=1",
       },
     });

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { compile } from "@promptsite/compiler";
 import { canUse, getViewer } from "@/lib/access";
-import { compositionsInLastDay, DAILY_COMPOSITION_LIMIT, recordPrompt } from "@/lib/events";
+import { DAILY_COMPOSITION_LIMIT, recordPrompt, reserveComposition } from "@/lib/events";
 import { CompositionBody } from "@/lib/composition";
 import { getEntry } from "@/lib/library";
 
@@ -22,15 +22,20 @@ export async function POST(request: Request) {
   if (locked.length) {
     return NextResponse.json({ error: "upgrade_required", plan, blocks: locked }, { status: 402 });
   }
-  if (user && (await compositionsInLastDay(user.id)) >= DAILY_COMPOSITION_LIMIT) {
-    return NextResponse.json({ error: "rate_limited", limit: DAILY_COMPOSITION_LIMIT }, { status: 429 });
-  }
-
+  let result: ReturnType<typeof compile>;
   try {
-    const result = compile({ title, target, lang, blocks, slots });
-    await recordPrompt({ userId: user?.id ?? null, kind: "composition", target, blocks: slugs });
-    return NextResponse.json({ prompt: result.prompt, warnings: result.warnings });
+    result = compile({ title, target, lang, blocks, slots });
   } catch (error) {
     return NextResponse.json({ error: "compile_failed", message: (error as Error).message }, { status: 422 });
   }
+
+  // Signed-in users (the only ones who can reach paid blocks) are metered atomically. Anonymous
+  // callers can only compile free blocks, whose prompts the library pages show publicly anyway.
+  if (user) {
+    const allowed = await reserveComposition({ userId: user.id, kind: "composition", target, blocks: slugs });
+    if (!allowed) return NextResponse.json({ error: "rate_limited", limit: DAILY_COMPOSITION_LIMIT }, { status: 429 });
+  } else {
+    await recordPrompt({ userId: null, kind: "composition", target, blocks: slugs });
+  }
+  return NextResponse.json({ prompt: result.prompt, warnings: result.warnings });
 }
