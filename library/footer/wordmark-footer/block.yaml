@@ -1,0 +1,71 @@
+slug: wordmark-footer
+name: Wordmark Footer
+category: footer
+tone: dark
+moods: [editorial, technical]
+tier: pro
+targets: [html, react, next]
+summary: >-
+  Dark footer with a brand column, three link columns and a full-bleed wordmark fitted edge to edge that rises
+  letter by letter as the page bottoms out.
+
+tokens:
+  colors:
+    ink: "#0b0b0c"
+    paper: "#f2efe8"
+    muted: "#8a877f"
+    ember: "#ff5a1f"
+    hairline: "rgb(242 239 232 / 0.14)"
+  fonts:
+    - { family: Instrument Serif, weights: [400], role: display }
+    - { family: Geist, weights: [400, 500], role: body }
+  easings:
+    out-expo: "cubic-bezier(0.16, 1, 0.3, 1)"
+
+slots:
+  - { key: brand, label: Marka (dev yazı), type: text, default: Northwind }
+  - { key: tagline, label: Slogan, type: textarea, default: "Analytics for teams who would rather be building." }
+  - { key: email, label: E-posta, type: text, default: hello@northwind.dev }
+  - { key: copyright, label: Telif satırı, type: text, default: "© 2026 Northwind Labs" }
+
+structure: |
+  `<footer>` background `--color-ink`, text `--color-paper`, `padding: 96px 40px 0` (24px sides
+  below 768px), `overflow: hidden`.
+
+  **Top grid** (`grid-template-columns: 1.6fr repeat(3, 1fr)`, gap 48px; two columns below 900px,
+  one below 560px):
+  - brand column: a 10px `--color-ember` square, then **{{tagline}}** (Instrument Serif 400, 32px,
+    line-height 1.1, max-width 320px, margin-top 20px) and a mail link **{{email}}**
+    (Geist 400, 15px, `--color-muted`, hover `--color-paper`, margin-top 24px).
+  - three link columns headed **Product**, **Company**, **Resources** (Geist 500, 12px, uppercase,
+    letter-spacing 0.14em, `--color-muted`, margin-bottom 18px), each with four links
+    (Geist 400, 15px, line-height 2.1):
+    Product → Overview, Integrations, Changelog, Status ·
+    Company → About, Careers, Customers, Contact ·
+    Resources → Docs, Guides, API reference, Security.
+    Each link shows a 6px ember dot that scales from 0 to 1 at its left on hover while the text
+    shifts 12px right (300ms `--ease-out-expo`).
+
+  **Legal row** (margin-top 80px, `padding: 20px 0`, border-top 1px `--color-hairline`, flex
+  space-between, Geist 400 13px `--color-muted`): **{{copyright}}** on the left; **Privacy**,
+  **Terms**, **Cookies** (gap 24px) on the right.
+
+  **Wordmark.** Below the legal row, **{{brand}}** set in Instrument Serif 400, one line,
+  `line-height: 0.8`, sized by JS so its width equals the footer's inner width exactly (measure
+  at 100px, scale the font size proportionally, re-fit on resize and after fonts load). Colour
+  `--color-paper`. It is clipped by the footer's bottom edge by 12% of its own height.
+  Each letter is an `inline-block` that starts at `translateY(60%)` and `opacity 0`; when the
+  footer is 30% visible (once) the letters rise to `0` / `1` over 1100ms `--ease-out-expo` with a
+  **45ms** stagger from left to right.
+
+parameters: |
+  - Padding 96px top, 40px sides (24px < 768px) · grid `1.6fr repeat(3, 1fr)` gap 48px
+  - Link hover: dot 6px scale 0→1, text x 0→12px, 300ms
+  - Legal row margin-top 80px, 13px
+  - Wordmark fit to inner width, line-height 0.8, bottom clip 12%, letters y 60%→0, 1100ms, stagger 45ms, threshold 0.3
+
+variants:
+  react: |
+    Fit the wordmark with a `ResizeObserver` on the footer and re-run after `document.fonts.ready`.
+  next: |
+    The wordmark is a small client component; the rest of the footer can stay a server component.

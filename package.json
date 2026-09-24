@@ -1,0 +1,12 @@
+{
+  "name": "promptsite",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "library:check": "pnpm --filter @promptsite/compiler library:check"
+  }
+}
