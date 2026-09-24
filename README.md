@@ -43,24 +43,13 @@ kontrol yapılır. Rakip sitelerden **teknik** alınır; metin, marka, asset ve 
 
 ## Deploy (Coolify)
 
-1. Coolify'da aynı projeye **PostgreSQL** ve **MinIO** kaynaklarını ekleyin.
-2. Yeni uygulama: bu repo, build pack **Dockerfile**, port `3000`, health check `/api/health`.
-3. Ortam değişkenleri (`.env.example`'daki liste):
-   - `NEXT_PUBLIC_SITE_URL`: sitenin tam adresi (ör. `https://promptsite.com`).
-   - `DATABASE_URL`: Coolify Postgres'in iç bağlantı adresi. Migration'lar her açılışta otomatik uygulanır.
-   - `BETTER_AUTH_SECRET`: `openssl rand -base64 32` ile üretin.
-   - `GOOGLE_CLIENT_ID/SECRET`: isteğe bağlı. Doluysa "Google ile devam et" butonu çıkar. Yönlendirme adresi: `<site>/api/auth/callback/google`.
-   - `S3_*`: MinIO adresi, bucket, anahtarlar ve bucket'ın herkese açık URL'si.
-4. **MinIO**: `promptsite-assets` bucket'ını oluşturun ve anonim okumaya açın:
-   `mc anonymous set download <alias>/promptsite-assets`.
-5. **Lemon Squeezy**:
-   - Pro ve Power için birer abonelik ürünü oluşturun. Variant id'lerini `LEMONSQUEEZY_VARIANT_PRO` ve `LEMONSQUEEZY_VARIANT_POWER` değişkenlerine yazın (virgülle birden fazla, ilki checkout'ta kullanılır).
-   - Settings → API: anahtarı `LEMONSQUEEZY_API_KEY`, mağaza id'sini `LEMONSQUEEZY_STORE_ID` olarak girin.
-   - Settings → Webhooks: URL `<site>/api/webhooks/lemonsqueezy`, tüm `subscription_*` olaylarını seçin, signing secret'ı `LEMONSQUEEZY_WEBHOOK_SECRET` olarak girin.
-   - Önce **test modunda** deneyin (test kartı `4242 4242 4242 4242`).
-6. **İlk admin**: sitede kayıt olun, sonra Postgres'te
-   `update "user" set role = 'admin' where email = 'siz@ornek.com';`
-   (yerelde: `pnpm admin:grant siz@ornek.com`). `/admin` sayfası açılır.
+Adım adım rehber: **[docs/DEPLOY.md](docs/DEPLOY.md)**. Kısaca:
+
+- Coolify'da PostgreSQL ve MinIO kaynakları eklenir.
+- Uygulama bu repodan **Dockerfile** ile kurulur (port `3000`, health check `/api/health`).
+- Ortam değişkenleri çalışma anında okunur. En az `SITE_URL`, `DATABASE_URL` ve `BETTER_AUTH_SECRET` gerekir.
+- Migration'lar her açılışta otomatik uygulanır.
+- Yayından sonra `node tools/smoke.mjs https://site-adresi` ile 8 temel kontrol çalıştırılır.
 
 Yerelde tüm yığın: `cp .env.example .env && docker compose up --build`.
 

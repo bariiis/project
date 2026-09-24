@@ -5,6 +5,7 @@ import { nextCookies } from "better-auth/next-js";
 import { headers } from "next/headers";
 import { schema } from "@promptsite/db";
 import { db } from "./db";
+import { siteUrl } from "./site";
 
 const google =
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
@@ -15,7 +16,7 @@ let instance: ReturnType<typeof createAuth> | undefined;
 
 function createAuth() {
   return betterAuth({
-    baseURL: process.env.NEXT_PUBLIC_SITE_URL,
+    baseURL: siteUrl(),
     secret: process.env.BETTER_AUTH_SECRET,
     database: drizzleAdapter(db(), {
       provider: "pg",
