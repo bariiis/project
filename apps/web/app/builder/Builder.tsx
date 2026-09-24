@@ -73,6 +73,18 @@ export function Builder({
   const [projectId, setProjectId] = useState<string | null>(project?.id ?? null);
   const [saved, setSaved] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<{ busy: boolean; message: string | null }>({ busy: false, message: null });
+  const [fullPage, setFullPage] = useState(false);
+
+  useEffect(() => {
+    if (!fullPage) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setFullPage(false);
+    addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+  }, [fullPage]);
 
   const current: Draft = { title, target, lang, order, slots };
   const dirty = projectId !== null && saved !== snapshot(current);
@@ -227,6 +239,12 @@ export function Builder({
             <p>Sağ panelden blok ekleyerek sayfanı kur.</p>
           </div>
         ) : (
+          <>
+          <div className="mx-auto mb-3 flex max-w-5xl justify-end">
+            <button onClick={() => setFullPage(true)} className="rounded-full border border-line px-3 py-1.5 text-xs hover:border-paper/40">
+              Sayfa olarak göster ↗
+            </button>
+          </div>
           <div className="mx-auto max-w-5xl overflow-hidden rounded-2xl border border-line" data-testid="canvas">
             {selected.map((b) =>
               b.hasPreview ? (
@@ -242,8 +260,34 @@ export function Builder({
               ),
             )}
           </div>
+          </>
         )}
       </section>
+
+      {/* Full-page view: the same previews at the real viewport width, unscaled, one after another. */}
+      {fullPage && selected.length > 0 && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-ink" role="dialog" aria-modal aria-label={`${title} sayfa görünümü`}>
+          <button
+            onClick={() => setFullPage(false)}
+            className="fixed top-3 right-3 z-10 rounded-full border border-line bg-ink/80 px-4 py-2 text-xs backdrop-blur hover:border-paper/40"
+          >
+            Kapat (Esc)
+          </button>
+          {selected.map((b) =>
+            b.hasPreview ? (
+              // viewport=320 keeps the frame at the window's own width, so blocks render their real responsive layout.
+              <ScaledFrame
+                key={b.slug}
+                src={`/api/preview/${b.slug}?s=${encodeSlots(slots[b.slug] ?? {})}`}
+                title={b.name}
+                viewport={320}
+                interactive
+                autoHeight
+              />
+            ) : null,
+          )}
+        </div>
+      )}
 
       {/* Right panel */}
       <aside className="order-1 flex flex-col border-line lg:order-2 lg:max-h-[calc(100svh-3.5rem)] lg:border-l">
