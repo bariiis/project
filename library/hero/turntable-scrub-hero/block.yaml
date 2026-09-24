@@ -94,3 +94,12 @@ variants:
   next: |
     Client component. Serve the all-intra MP4 from your storage with `Accept-Ranges` so the browser
     can seek without downloading the whole file.
+
+demo:
+  eyebrow: "Vessel 04 — 38 m explorer"
+  product_name: Bow Wave
+  spec_1: Steel hull, aluminium superstructure
+  spec_2: 14 knots cruising
+  spec_3: Ten guests, crew of six
+  hint: Move across to ride the wave
+  scrub_video: bow-wave.mp4

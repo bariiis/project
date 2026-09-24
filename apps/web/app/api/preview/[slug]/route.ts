@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { isHttpsUrl, isMediaSlot } from "@promptsite/compiler";
+import { DEMO_FILE, isHttpsUrl, isMediaSlot } from "@promptsite/compiler";
 import { getEntry } from "@/lib/library";
 import { injectPreview } from "@/lib/preview";
 import { decodeSlots } from "@/lib/slot-encoding";
@@ -20,7 +20,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     }),
   );
 
-  return new Response(injectPreview(await readFile(entry.referencePath, "utf8"), slug, values), {
+  // Sample content fills whatever the viewer has not made their own: untouched text and empty media.
+  const demoMedia: Record<string, string> = {};
+  for (const slot of entry.block.slots) {
+    const sample = entry.block.demo[slot.key];
+    if (sample === undefined) continue;
+    if (!isMediaSlot(slot)) {
+      if (values[slot.key] === undefined || values[slot.key] === slot.default) values[slot.key] = sample;
+    } else if (values[slot.key] === undefined && DEMO_FILE.test(sample)) {
+      demoMedia[slot.key] = `/media/demo/${sample}`;
+    }
+  }
+
+  return new Response(injectPreview(await readFile(entry.referencePath, "utf8"), slug, values, demoMedia), {
     headers: {
       "content-type": "text/html; charset=utf-8",
       "cache-control": "public, max-age=300",

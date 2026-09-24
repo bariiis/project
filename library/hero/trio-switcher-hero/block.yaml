@@ -95,3 +95,16 @@ variants:
   next: |
     Client component. Use `next/image` with `fill` and `priority` only for the featured background;
     the side images are small and lazy.
+
+demo:
+  eyebrow: Project
+  cta_label: See the project
+  item_1_name: Canopy
+  item_1_lede: "A timber house raised among old trees, opened to the path by one round window."
+  item_1_image: canopy-house.webp
+  item_2_name: Atrium
+  item_2_lede: "A concrete courtyard where the forest grows through three floors and a still pool."
+  item_2_image: atrium.webp
+  item_3_name: Terminal
+  item_3_lede: "An airport roof folded like a ribbon, lit from within for arrivals after dusk."
+  item_3_image: terminal.webp

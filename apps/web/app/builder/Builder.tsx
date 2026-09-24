@@ -348,7 +348,7 @@ export function Builder({
                                       <span className="mt-1 block text-[11px] text-muted/80">
                                         {common.value && !common.value.startsWith("https://")
                                           ? "Yalnızca https:// ile başlayan adresler kullanılır."
-                                          : "Boş bırakırsan blok kendi yedek görüntüsünü kullanır."}
+                                          : "Boş bırakırsan önizleme örnek medyamızı gösterir; prompt ise bloğun kodla üretilen yedek görüntüsünü ister."}
                                       </span>
                                     </>
                                   ) : (

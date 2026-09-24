@@ -16,6 +16,7 @@ ENV NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0 NEXT_TELEMETRY_DISABLED=1 \
     LIBRARY_DIR=/app/library MIGRATIONS_DIR=/app/migrations RUN_MIGRATIONS=1
 COPY --from=build --chown=node:node /repo/apps/web/.next/standalone ./
 COPY --from=build --chown=node:node /repo/apps/web/.next/static ./apps/web/.next/static
+COPY --from=build --chown=node:node /repo/apps/web/public ./apps/web/public
 COPY --from=build --chown=node:node /repo/library ./library
 COPY --from=build --chown=node:node /repo/packages/db/migrations ./migrations
 USER node

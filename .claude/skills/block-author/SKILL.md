@@ -52,6 +52,9 @@ unique across the library.
      with `data-slot-src="<key>"` and ship **no src by default**. At runtime the block checks for
      a src and, when there is none, renders a procedural fallback (canvas gradient, noise,
      particles) so the block is complete without media. The preview only ever sets https URLs.
+   - optional `demo:` in block.yaml maps slot keys to preview-only sample content: text, or for
+     media slots a file name in `apps/web/public/media/demo/` (our own media, never competitor
+     assets). Previews use it where the viewer left a slot untouched; prompts never include it.
 5. **Write `block.yaml`** following `research/ANALYSIS.md` section 2:
    - `summary`: one sentence, used in the "What it is" list.
    - `structure`: DOM skeleton, every size (px/rem/clamp), copy, and each animation as

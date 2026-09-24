@@ -97,3 +97,10 @@ variants:
   next: |
     The hero is a client component. Use a plain `<img>` preload (not `next/image`) for the two
     images because they are drawn into canvases, and mark the base image `fetchPriority="high"`.
+
+demo:
+  eyebrow: "Forest pavilion, 2026"
+  headline_1: "Concrete,"
+  headline_2: then canopy.
+  image_base: atrium.webp
+  image_reveal: canopy-house.webp

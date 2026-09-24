@@ -112,3 +112,13 @@ variants:
   next: |
     Client component. Serve the clips from your storage with range requests enabled, and preload
     only the two forward clips; fetch the reverse clips after the first interaction.
+
+demo:
+  headline: Something is watching
+  prompt_label: "Wake the forest →"
+  option_a: Approach
+  option_b: Strike
+  a_forward: tiger-approach.mp4
+  a_reverse: tiger-approach-rev.mp4
+  b_forward: tiger-strike.mp4
+  b_reverse: tiger-strike-rev.mp4

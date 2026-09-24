@@ -106,3 +106,6 @@ variants:
   next: |
     The footer is a client component rendered from `app/layout.tsx`; lazy-start the video only when
     the footer is within one viewport of the screen.
+
+demo:
+  bg_video: night-garden.mp4

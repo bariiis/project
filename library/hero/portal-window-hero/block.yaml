@@ -106,3 +106,7 @@ variants:
   next: |
     Client component. Preload the portal image with `<link rel="preload" as="image">` in the page
     head so the window is never empty on first paint.
+
+demo:
+  next_label: Open water
+  portal_media: bow-wave.webp

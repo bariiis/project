@@ -54,4 +54,19 @@ describe("injectPreview", () => {
     expect(document.querySelector("video")!.getAttribute("src")).toBe("https://cdn.example.com/a.mp4");
     expect(document.querySelector("img")!.hasAttribute("src")).toBe(false);
   });
+
+  it("uses same-origin sample media only where the viewer gave none", () => {
+    const page = '<body><section data-block><img data-slot-src="a"><img data-slot-src="b"><img data-slot-src="c"></section></body>';
+    const out = injectPreview(
+      page,
+      "demo",
+      { a: "https://cdn.example.com/mine.webp" },
+      { b: "/media/demo/terminal.webp", c: "https://evil.example/x.webp" },
+    );
+    const window = new Window();
+    window.document.write(out.slice(0, out.indexOf("<script>")));
+    new window.Function(out.slice(out.indexOf("<script>") + 8, out.lastIndexOf("</script>")))();
+    const src = [...window.document.querySelectorAll("img")].map((img) => img.getAttribute("src"));
+    expect(src).toEqual(["https://cdn.example.com/mine.webp", "/media/demo/terminal.webp", null]);
+  });
 });

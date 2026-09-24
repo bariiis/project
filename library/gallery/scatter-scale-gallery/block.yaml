@@ -94,3 +94,19 @@ variants:
   next: |
     Use `next/image` with `fill` inside each frame (`sizes` matching the column span) and keep the
     scroll logic in a small client component that receives the card refs.
+
+demo:
+  eyebrow: "Studio · Selected work"
+  headline: Built and imagined
+  caption_1: "Terminal, aerial at dusk"
+  caption_2: Bow wave
+  caption_3: Canopy house
+  caption_4: Forest atrium
+  caption_5: Night walker
+  caption_6: Night garden
+  image_1: terminal.webp
+  image_2: bow-wave.webp
+  image_3: canopy-house.webp
+  image_4: atrium.webp
+  image_5: night-walker.webp
+  image_6: night-garden.webp

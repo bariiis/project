@@ -95,11 +95,23 @@ export const BlockSchema = z
     parameters: z.string().default(""),
     /** Target-specific notes appended to the block's section. */
     variants: z.partialRecord(Target, z.string()).default({}),
+    /**
+     * Preview-only sample content: slot key → text, or for media slots a file name in the web
+     * app's `public/media/demo/`. Never part of a prompt; empty media stays "not provided" there.
+     */
+    demo: z.record(z.string(), z.string()).default({}),
   })
   .superRefine((block, ctx) => {
     const keys = new Set(block.slots.map((s) => s.key));
     if (keys.size !== block.slots.length) {
       ctx.addIssue({ code: "custom", message: "duplicate slot keys", path: ["slots"] });
+    }
+    for (const [key, value] of Object.entries(block.demo)) {
+      const slot = block.slots.find((s) => s.key === key);
+      if (!slot) ctx.addIssue({ code: "custom", message: `demo sets unknown slot "${key}"`, path: ["demo", key] });
+      else if (isMediaSlot(slot) && !DEMO_FILE.test(value)) {
+        ctx.addIssue({ code: "custom", message: `demo media "${value}" must be a file name like name.webp`, path: ["demo", key] });
+      }
     }
     for (const field of ["structure", "parameters"] as const) {
       for (const ref of placeholders(block[field])) {
@@ -123,6 +135,9 @@ export type Font = z.infer<typeof FontSchema>;
 export type Asset = z.infer<typeof AssetSchema>;
 export type Library = z.infer<typeof LibrarySchema>;
 export type Slot = z.infer<typeof SlotSchema>;
+
+/** Demo media are plain file names served from the web app's `/media/demo/`. */
+export const DEMO_FILE = /^[a-z0-9][a-z0-9-]*\.(webp|jpg|png|mp4|webm)$/;
 
 export function isMediaSlot(slot: { type: string }): boolean {
   return (MEDIA_SLOT_TYPES as readonly string[]).includes(slot.type);
