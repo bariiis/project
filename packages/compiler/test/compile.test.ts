@@ -1,7 +1,7 @@
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { BlockSchema, compile, fillSlots, mergeTokens, TARGETS, type BlockInput } from "../src";
-import { loadLibrary } from "../src/node";
+import { checkReference, loadLibrary } from "../src/node";
 
 const LIBRARY = resolve(import.meta.dirname, "../../../library");
 
@@ -90,6 +90,15 @@ describe("compile", () => {
 
   it("refuses an empty composition", () => {
     expect(() => compile({ title: "T", target: "html", blocks: [] })).toThrow();
+  });
+});
+
+describe("checkReference", () => {
+  it("requires a data-block root and one data-slot per slot", () => {
+    const b = block();
+    expect(checkReference('<section data-block><h1 data-slot="headline">Hi</h1></section>', b)).toEqual([]);
+    expect(checkReference('<section><h1 data-slot="headline">Hi</h1></section>', b)).toEqual(["missing a data-block root element"]);
+    expect(checkReference("<section data-block><h1>Hi</h1></section>", b)).toEqual(['no element marks slot "headline" (data-slot)']);
   });
 });
 

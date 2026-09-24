@@ -10,6 +10,19 @@ export interface LibraryEntry {
   referencePath: string | null;
 }
 
+/**
+ * The builder preview rewrites `[data-slot]` text and measures the `[data-block]` root, so every
+ * reference implementation must mark both.
+ */
+export function checkReference(html: string, block: Block): string[] {
+  const problems: string[] = [];
+  if (!/\sdata-block[\s>=]/.test(html)) problems.push("missing a data-block root element");
+  for (const slot of block.slots) {
+    if (!html.includes(`data-slot="${slot.key}"`)) problems.push(`no element marks slot "${slot.key}" (data-slot)`);
+  }
+  return problems;
+}
+
 /** Reads every `library/<category>/<slug>/block.yaml`. Throws with all problems at once. */
 export function loadLibrary(root: string): LibraryEntry[] {
   const entries: LibraryEntry[] = [];
@@ -36,7 +49,9 @@ export function loadLibrary(root: string): LibraryEntry[] {
         errors.push(`${file}: category "${block.category}" must match folder "${category.name}"`);
       }
       const reference = join(dir, "reference.html");
-      entries.push({ block, dir, referencePath: existsSync(reference) ? reference : null });
+      const hasReference = existsSync(reference);
+      if (hasReference) errors.push(...checkReference(readFileSync(reference, "utf8"), block).map((e) => `${reference}: ${e}`));
+      entries.push({ block, dir, referencePath: hasReference ? reference : null });
     }
   }
 

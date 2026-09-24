@@ -74,6 +74,6 @@ prompt üretebilir.
 ## Yol haritası
 
 - **Faz 0:** compiler, ilk 3 blok, kütüphane + builder arayüzü, capture aracı, skill'ler, DB şeması, Docker.
-- **Faz 1 (bu sürüm):** Better Auth (e-posta + Google), Lemon Squeezy abonelik + webhook, gerçek plan kontrolü, MinIO asset yükleme, admin paneli, prompt kaydı ve günlük limit.
-- **Faz 2:** builder'da sürükle-bırak, proje kaydetme, blok başına gerçek yükseklikte önizleme.
+- **Faz 1:** Better Auth (e-posta + Google), Lemon Squeezy abonelik + webhook, gerçek plan kontrolü, MinIO asset yükleme, admin paneli, prompt kaydı ve günlük limit.
+- **Faz 2 (bu sürüm):** builder'da sürükle-bırak (fare ve klavye), metin değişikliklerinin canlı önizlemesi, blokların gerçek yükseklikte tek sayfa gibi dizilmesi, proje kaydetme (Pro) ve `/projeler` sayfası.
 - **Faz 3:** MCP sunucusu, 40-60 blok, TR/EN arayüz.

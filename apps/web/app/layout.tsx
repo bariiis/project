@@ -28,6 +28,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/builder" className="transition-colors hover:text-paper">Builder</Link>
               <Link href="/#fiyat" className="hidden transition-colors hover:text-paper sm:inline">Fiyatlar</Link>
               {user?.role === "admin" && <Link href="/admin" className="transition-colors hover:text-paper">Admin</Link>}
+              {user && <Link href="/projeler" className="transition-colors hover:text-paper">Projeler</Link>}
               {user ? (
                 <Link href="/hesap" className="rounded-full border border-line px-3 py-1.5 text-paper transition-colors hover:border-paper/40">
                   Hesap · {plan === "free" ? "Ücretsiz" : plan === "pro" ? "Pro" : "Power"}

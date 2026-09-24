@@ -1,20 +1,12 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
-import { compile, Target } from "@promptsite/compiler";
+import { compile } from "@promptsite/compiler";
 import { canUse, getViewer } from "@/lib/access";
 import { compositionsInLastDay, DAILY_COMPOSITION_LIMIT, recordPrompt } from "@/lib/events";
+import { CompositionBody } from "@/lib/composition";
 import { getEntry } from "@/lib/library";
 
-const Body = z.object({
-  title: z.string().trim().min(1).max(120),
-  target: Target,
-  lang: z.string().regex(/^[a-z]{2}(-[A-Z]{2})?$/).default("en"),
-  blocks: z.array(z.string()).min(1).max(20),
-  slots: z.record(z.string(), z.record(z.string(), z.string().max(2000))).default({}),
-});
-
 export async function POST(request: Request) {
-  const parsed = Body.safeParse(await request.json().catch(() => null));
+  const parsed = CompositionBody.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid_request", issues: parsed.error.issues }, { status: 400 });
   }

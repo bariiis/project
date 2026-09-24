@@ -42,7 +42,12 @@ unique across the library.
    family, so compositions merge without namespaced duplicates.
 4. **Write `reference.html` first**, then describe it. It must run offline except for Google
    Fonts and importmap CDNs; load non-essential libraries with a dynamic `import()` that fails
-   soft.
+   soft. The builder preview depends on two markers, and `pnpm library:check` enforces both:
+   - the block's root element carries `data-block` (its height sizes the builder frame);
+   - every slot's visible text sits in an element with `data-slot="<key>"` whose whole
+     `textContent` is that value (wrap it in a `<span>` if it shares a parent with icons).
+     Scripts that build DOM from slot text (word splits, tickers, wordmarks) must read it from
+     that element at runtime and escape it or use DOM APIs, never inject it as HTML.
 5. **Write `block.yaml`** following `research/ANALYSIS.md` section 2:
    - `summary`: one sentence, used in the "What it is" list.
    - `structure`: DOM skeleton, every size (px/rem/clamp), copy, and each animation as

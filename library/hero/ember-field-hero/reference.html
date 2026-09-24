@@ -65,18 +65,18 @@
 </head>
 <body>
 <main>
-  <section class="hero" id="hero">
+  <section class="hero" id="hero" data-block>
     <canvas aria-hidden="true"></canvas>
     <header>
-      <a class="brand" href="#"><i></i>Northwind</a>
-      <nav aria-label="Primary"><a href="#">Product</a><a href="#">Customers</a><a href="#">Pricing</a></nav>
+      <a class="brand" href="#"><i></i><span data-slot="brand">Northwind</span></a>
+      <nav aria-label="Primary"><a href="#" data-slot="nav_1">Product</a><a href="#" data-slot="nav_2">Customers</a><a href="#" data-slot="nav_3">Pricing</a></nav>
       <a class="ghost" href="#">Sign in</a>
     </header>
     <div class="content">
-      <h1><span class="line">Signal over</span><span class="line">noise.</span></h1>
+      <h1><span class="line" data-slot="headline_1">Signal over</span><span class="line" data-slot="headline_2">noise.</span></h1>
       <div class="side">
-        <p>Infrastructure analytics that surfaces the one metric that matters, the moment it moves.</p>
-        <a class="cta" href="#">Start free trial
+        <p data-slot="subline">Infrastructure analytics that surfaces the one metric that matters, the moment it moves.</p>
+        <a class="cta" href="#"><span data-slot="cta_label">Start free trial</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
         </a>
       </div>
@@ -93,10 +93,11 @@
 
   // Split headline words into clip-mask boxes with a running stagger.
   const STAGGER = 90, DELAY = 150;
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
   let n = 0;
   for (const line of document.querySelectorAll("h1 .line")) {
     line.innerHTML = line.textContent.trim().split(/\s+/)
-      .map((w) => `<span class="w"><span style="transition-delay:${DELAY + STAGGER * n++}ms">${w}</span></span>`)
+      .map((w) => `<span class="w"><span style="transition-delay:${DELAY + STAGGER * n++}ms">${esc(w)}</span></span>`)
       .join(" ");
   }
   requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById("hero").classList.add("ready")));

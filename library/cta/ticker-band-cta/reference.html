@@ -57,30 +57,30 @@
 </style>
 </head>
 <body>
-<section class="cta-section">
+<section class="cta-section" data-block>
   <div class="card">
-    <div class="ticker" aria-hidden="true"><div class="track"></div></div>
+    <div class="ticker" aria-hidden="true"><span hidden data-slot="ticker_text">Ship faster · Sleep better · Know first</span><div class="track"></div></div>
     <div class="body">
-      <h2 class="rise">Ready when your data is.</h2>
+      <h2 class="rise" data-slot="headline">Ready when your data is.</h2>
       <div class="copy rise">
-        <p>Connect a source in two minutes. No credit card, no sales call, no lock-in.</p>
+        <p data-slot="body">Connect a source in two minutes. No credit card, no sales call, no lock-in.</p>
         <div class="row">
-          <a class="btn" href="#"><span class="roll"><span><span>Get started</span><span aria-hidden="true">Get started</span></span></span></a>
-          <a class="link" href="#">Talk to an engineer</a>
+          <a class="btn" href="#"><span class="roll"><span><span data-slot="cta_label">Get started</span><span aria-hidden="true" data-slot="cta_label">Get started</span></span></span></a>
+          <a class="link" href="#" data-slot="secondary_label">Talk to an engineer</a>
         </div>
       </div>
     </div>
   </div>
 </section>
 <script type="module">
-  const TEXT = "Ship faster · Sleep better · Know first";
+  const TEXT = document.querySelector("[data-slot=ticker_text]").textContent;
   const track = document.querySelector(".track");
   const probe = document.createElement("span");
   probe.textContent = TEXT;
   track.append(probe);
-  const copies = Math.max(2, Math.ceil((innerWidth * 2) / probe.offsetWidth));
+  const copies = Math.max(2, Math.ceil((innerWidth * 2) / Math.max(1, probe.offsetWidth)));
   // Even count so the -50% loop lands on an identical frame.
-  track.innerHTML = Array.from({ length: copies + (copies % 2) }, () => `<span>${TEXT}</span>`).join("");
+  track.replaceChildren(...Array.from({ length: copies + (copies % 2) }, () => probe.cloneNode(true)));
 
   const io = new IntersectionObserver((entries) => {
     for (const e of entries) if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }

@@ -48,28 +48,30 @@
 </style>
 </head>
 <body>
-<footer>
+<footer data-block>
   <div class="grid">
     <div>
       <div class="mark"></div>
-      <p class="tagline">Analytics for teams who would rather be building.</p>
-      <a class="mail" href="mailto:hello@northwind.dev">hello@northwind.dev</a>
+      <p class="tagline" data-slot="tagline">Analytics for teams who would rather be building.</p>
+      <a class="mail" href="mailto:hello@northwind.dev" data-slot="email">hello@northwind.dev</a>
     </div>
     <nav class="col" aria-label="Product"><h3>Product</h3><ul><li><a href="#">Overview</a></li><li><a href="#">Integrations</a></li><li><a href="#">Changelog</a></li><li><a href="#">Status</a></li></ul></nav>
     <nav class="col" aria-label="Company"><h3>Company</h3><ul><li><a href="#">About</a></li><li><a href="#">Careers</a></li><li><a href="#">Customers</a></li><li><a href="#">Contact</a></li></ul></nav>
     <nav class="col" aria-label="Resources"><h3>Resources</h3><ul><li><a href="#">Docs</a></li><li><a href="#">Guides</a></li><li><a href="#">API reference</a></li><li><a href="#">Security</a></li></ul></nav>
   </div>
   <div class="legal">
-    <span>© 2026 Northwind Labs</span>
+    <span data-slot="copyright">© 2026 Northwind Labs</span>
     <nav aria-label="Legal"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Cookies</a></nav>
   </div>
-  <div class="wordmark" aria-label="Northwind">Northwind</div>
+  <div class="wordmark" data-slot="brand">Northwind</div>
 </footer>
 <script type="module">
   const footer = document.querySelector("footer");
   const mark = document.querySelector(".wordmark");
   const STAGGER = 45;
-  mark.innerHTML = [...mark.textContent].map((c, i) => `<span aria-hidden="true" style="transition-delay:${i * STAGGER}ms">${c}</span>`).join("");
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+  mark.setAttribute("aria-label", mark.textContent);
+  mark.innerHTML = [...mark.textContent].map((c, i) => `<span aria-hidden="true" style="transition-delay:${i * STAGGER}ms">${esc(c)}</span>`).join("");
 
   function fit() {
     mark.style.fontSize = "100px";
