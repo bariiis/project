@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Flavor Switch Hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --color-ink: #0b0b0c;
+    --color-paper: #f2efe8;
+    --color-muted: #8a877f;
+    --color-ember: #ff5a1f;
+    --radius-pill: 999px;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --pad: 48px;
+  }
+  @media (max-width: 899px) { :root { --pad: 20px; } }
+  /* Registered colours so the radial background interpolates between flavours. */
+  @property --bg-in { syntax: "<color>"; inherits: true; initial-value: #b0305f; }
+  @property --bg-mid { syntax: "<color>"; inherits: true; initial-value: #5a0f30; }
+  @property --bg-out { syntax: "<color>"; inherits: true; initial-value: #16040c; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--color-ink); color: var(--color-paper); font-family: "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+  .hero {
+    --bg-in: #b0305f; --bg-mid: #5a0f30; --bg-out: #16040c; --accent: #ffc2d4;
+    position: relative; height: 100svh; min-height: 40rem; overflow: hidden; isolation: isolate;
+    background: radial-gradient(circle at 50% 55%, var(--bg-in) 0%, var(--bg-mid) 50%, var(--bg-out) 100%);
+    transition: --bg-in 1400ms ease-in-out, --bg-mid 1400ms ease-in-out, --bg-out 1400ms ease-in-out;
+  }
+  .hero[data-variant="b"] { --bg-in: #7f9c12; --bg-mid: #36470a; --bg-out: #0b1103; --accent: #eaff8a; }
+  .store { display: none; }
+
+  /* Rising bubbles: a small pool of rings recycled by the script. */
+  .bubbles { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+  .bubble { position: absolute; bottom: -40px; border-radius: 50%; opacity: 0; border: 1px solid rgb(255 255 255 / 0.55); background: radial-gradient(circle at 32% 30%, rgb(255 255 255 / 0.7) 0 12%, rgb(255 255 255 / 0.08) 30%, transparent 62%); }
+
+  /* Floating bits: the outer span is moved by the frame loop, the inner <i> by the switch. */
+  .layer { position: absolute; inset: 0; pointer-events: none; }
+  .layer.back { z-index: 1; }
+  .layer.front { z-index: 4; }
+  .bit { position: absolute; width: calc(var(--size) * var(--k, 1)); aspect-ratio: 1; will-change: transform; }
+  .bit i { position: absolute; inset: 0; border-radius: 50%; will-change: transform, opacity; filter: drop-shadow(0 12px 18px rgb(0 0 0 / 0.3));
+    background: radial-gradient(circle at 32% 28%, rgb(255 255 255 / 0.75) 0 7%, var(--c1) 20%, var(--c2) 62%, var(--c3) 100%); }
+  .layer[data-kind="a"] .bit i { --c1: #ff7aa2; --c2: #c21d55; --c3: #4a0620; }
+  .layer[data-kind="b"] .bit i { --c1: #e2f56a; --c2: #7da51a; --c3: #203006; }
+  .layer.has-img .bit i { border-radius: 0; background: var(--garnish) center / contain no-repeat; }
+  .layer.back .bit { opacity: 0.6; }
+  .f1 { top: 62%; left: 26%; --size: 120px; } .f2 { top: 66%; left: 36%; --size: 64px; }
+  .f3 { top: 30%; left: 66%; --size: 150px; } .f4 { top: 12%; left: 50%; --size: 84px; }
+  .f5 { top: 86%; left: 36%; --size: 72px; } .f6 { top: 58%; left: 72%; --size: 104px; }
+  .b1 { top: 16%; left: 40%; --size: 60px; } .b2 { top: 52%; left: 56%; --size: 50px; } .b3 { top: 80%; left: 32%; --size: 56px; }
+
+  /* Product: float (CSS) > tilt (frame loop) > spin (switch). */
+  .product { position: absolute; left: 50%; top: 54%; z-index: 2; width: min(30vw, 340px); aspect-ratio: 3 / 5; translate: -50% -50%; pointer-events: none; animation: bob 6s ease-in-out infinite; }
+  @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
+  .tilt, .spin { position: absolute; inset: 0; }
+  .tilt { will-change: transform; }
+  .shot { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 30px 40px rgb(0 0 0 / 0.45)); }
+  .shot[hidden], .can[hidden] { display: none; }
+  /* Procedural can, shown when no product image is set or it fails to load. */
+  .can { position: absolute; left: 22%; right: 22%; top: 4%; bottom: 4%; border-radius: 22% / 7%; box-shadow: 0 30px 50px rgb(0 0 0 / 0.45);
+    background: linear-gradient(90deg, var(--k3) 0%, var(--k1) 16%, var(--k2) 30%, var(--k1) 46%, var(--k3) 100%); }
+  .can[data-variant="a"] { --k1: #d8457a; --k2: #ffb3c9; --k3: #5e0d2c; }
+  .can[data-variant="b"] { --k1: #a6c928; --k2: #eaff9a; --k3: #334208; }
+  .can::before, .can::after { content: ""; position: absolute; left: 4%; right: 4%; height: 7%; border-radius: 50%; background: linear-gradient(90deg, #6e6e72, #e9e9ee 35%, #8d8d93 70%, #4b4b50); }
+  .can::before { top: -2%; }
+  .can::after { bottom: -2%; }
+  .can-band { position: absolute; left: 0; right: 0; top: 40%; height: 26%; display: grid; place-items: center; background: rgb(11 11 12 / 0.22); }
+  .can-label { font-family: "Instrument Serif", serif; font-style: italic; font-size: clamp(1rem, 2.2vw, 1.9rem); line-height: 1; text-align: center; padding: 0 8%; color: #fff; }
+
+  /* Copy. */
+  .top { position: absolute; top: 28px; left: var(--pad); right: var(--pad); z-index: 5; display: flex; justify-content: space-between; align-items: center; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 15px; }
+  .brand::before { content: ""; width: 10px; height: 16px; border-radius: 3px; border: 1.5px solid currentColor; }
+  .pill { height: 42px; display: inline-flex; align-items: center; padding: 0 20px; border-radius: var(--radius-pill); font-size: 14px; background: rgb(255 255 255 / 0.08); border: 1px solid rgb(255 255 255 / 0.18); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); transition: background 300ms ease; }
+  .pill:hover { background: rgb(255 255 255 / 0.16); }
+  .cols { position: absolute; inset: 104px var(--pad) 40px; z-index: 3; display: flex; justify-content: space-between; pointer-events: none; }
+  .left, .right { display: flex; flex-direction: column; pointer-events: auto; }
+  .left { gap: 26px; max-width: 34rem; }
+  .right { align-items: flex-end; justify-content: space-between; text-align: right; }
+  h1, .side { font-family: "Instrument Serif", serif; font-weight: 400; letter-spacing: -0.03em; }
+  h1 { font-size: clamp(3.4rem, 8vw, 9rem); line-height: 0.86; }
+  h1 em, .side em { display: block; font-style: italic; color: var(--accent); transition: color 1400ms ease-in-out; }
+  .lede { max-width: 34ch; font-size: 16px; line-height: 1.55; color: rgb(242 239 232 / 0.78); }
+  .cta { display: inline-flex; align-items: center; gap: 18px; width: fit-content; height: 54px; padding: 0 6px 0 24px; border-radius: var(--radius-pill); font-weight: 500; font-size: 15px; background: rgb(0 0 0 / 0.35); border: 1px solid rgb(255 255 255 / 0.18); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); transition: transform 300ms var(--ease-out-expo), background 300ms ease; }
+  .cta:hover { transform: translateY(-3px); background: rgb(0 0 0 / 0.5); }
+  .cta b { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; font-size: 22px; font-weight: 500; background: var(--accent); color: var(--color-ink); transition: background 1400ms ease-in-out; }
+  .note { margin-top: auto; display: flex; align-items: center; gap: 12px; font-size: 12px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: rgb(242 239 232 / 0.62); }
+  .note::before { content: ""; width: 24px; height: 1px; background: currentColor; }
+
+  .cards { display: flex; gap: 14px; padding-top: 48px; }
+  .card { position: relative; width: 132px; padding: 76px 12px 14px; border-radius: 24px; cursor: pointer; text-align: center; display: flex; flex-direction: column; gap: 2px;
+    background: rgb(255 255 255 / 0.06); border: 1px solid rgb(255 255 255 / 0.16); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transition: background 300ms ease, border-color 300ms ease; }
+  .card:hover { background: rgb(255 255 255 / 0.12); }
+  .card[aria-pressed="true"] { border-color: var(--accent); }
+  .thumb { position: absolute; left: 50%; top: -46px; width: 84px; height: 118px; translate: -50% 0; transition: transform 500ms var(--ease-back); }
+  .card:hover .thumb { transform: translateY(-24px) rotate(-10deg) scale(1.08); }
+  .thumb img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 16px 20px rgb(0 0 0 / 0.45)); }
+  .thumb img:not([src]), .thumb:not(.has-img) img { display: none; }
+  .thumb.has-img .mini { display: none; }
+  .mini { position: absolute; inset: 6px 22px; border-radius: 22% / 8%; box-shadow: 0 16px 20px rgb(0 0 0 / 0.4); background: linear-gradient(90deg, var(--k3), var(--k1) 16%, var(--k2) 30%, var(--k1) 46%, var(--k3)); }
+  .card[data-v="a"] .mini { --k1: #d8457a; --k2: #ffb3c9; --k3: #5e0d2c; }
+  .card[data-v="b"] .mini { --k1: #a6c928; --k2: #eaff9a; --k3: #334208; }
+  .card .name { font-size: 13px; font-weight: 500; }
+  .card .price { font-size: 12px; color: rgb(242 239 232 / 0.65); font-variant-numeric: tabular-nums; }
+  .side { font-size: clamp(2.4rem, 5vw, 5.2rem); line-height: 0.9; }
+
+  @media (max-width: 899px) {
+    .bit { --k: 0.6; }
+    .layer.front { z-index: 2; }
+    .cols { inset: 84px var(--pad) 24px; flex-direction: column; }
+    .left { gap: 16px; }
+    h1 { font-size: clamp(2.6rem, 12vw, 4rem); }
+    .lede { font-size: 15px; }
+    .note, .side { display: none; }
+    .right { align-items: center; }
+    .product { top: 57%; width: min(40vw, 190px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .product { animation: none; }
+    .hero, .thumb, h1 em, .side em, .cta b { transition: none; }
+  }
+</style>
+</head>
+<body>
+<section class="hero" data-block data-variant="a">
+  <!-- Garnish images are read by the script and painted onto the floating bits. -->
+  <div class="store" aria-hidden="true">
+    <img data-slot-src="variant_a_garnish" alt="" />
+    <img data-slot-src="variant_b_garnish" alt="" />
+  </div>
+  <div class="bubbles" aria-hidden="true"></div>
+  <div class="layer back" data-kind="a" aria-hidden="true">
+    <span class="bit b1"><i></i></span><span class="bit b2"><i></i></span><span class="bit b3"><i></i></span>
+  </div>
+  <div class="product" aria-hidden="true">
+    <div class="tilt">
+      <div class="spin">
+        <img class="shot" data-v="a" data-slot-src="variant_a_image" alt="" hidden />
+        <img class="shot" data-v="b" data-slot-src="variant_b_image" alt="" hidden />
+        <div class="can" data-variant="a"><div class="can-band"><span class="can-label"></span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <header class="top">
+    <span class="brand" data-slot="brand">Fizzwell</span>
+    <a class="pill" href="#"><span data-slot="cta_top">Find a store</span></a>
+  </header>
+
+  <div class="cols">
+    <div class="left">
+      <h1><span data-slot="headline_1">Sparkling</span><em data-slot="headline_2">on purpose</em></h1>
+      <p class="lede" data-slot="lede">Real fruit, a sharp fizz and not a gram of sugar. Cold from the fridge in under a minute.</p>
+      <a class="cta" href="#"><span data-slot="cta_label">Order a case</span><b aria-hidden="true">+</b></a>
+      <p class="note" data-slot="note">Brewed in small batches</p>
+    </div>
+    <div class="right">
+      <div class="cards" role="group" aria-label="Flavours">
+        <button class="card" type="button" data-v="a" aria-pressed="true">
+          <span class="thumb"><img data-slot-src="variant_a_image" alt="" /><span class="mini"></span></span>
+          <span class="name" data-slot="variant_a_name">Raspberry Rise</span>
+          <span class="price" data-slot="variant_a_price">$3.20</span>
+        </button>
+        <button class="card" type="button" data-v="b" aria-pressed="false">
+          <span class="thumb"><img data-slot-src="variant_b_image" alt="" /><span class="mini"></span></span>
+          <span class="name" data-slot="variant_b_name">Lime Spark</span>
+          <span class="price" data-slot="variant_b_price">$3.20</span>
+        </button>
+      </div>
+      <h2 class="side"><span data-slot="side_headline_1">Zero sugar,</span><em data-slot="side_headline_2">all bite</em></h2>
+    </div>
+  </div>
+
+  <div class="layer front" data-kind="a" aria-hidden="true">
+    <span class="bit f1"><i></i></span><span class="bit f2"><i></i></span><span class="bit f3"><i></i></span>
+    <span class="bit f4"><i></i></span><span class="bit f5"><i></i></span><span class="bit f6"><i></i></span>
+  </div>
+</section>
+<script type="module">
+  const hero = document.querySelector(".hero");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const finePointer = matchMedia("(pointer: fine)").matches;
+  const tilt = hero.querySelector(".tilt"), spin = hero.querySelector(".spin");
+  const can = hero.querySelector(".can"), canLabel = hero.querySelector(".can-label");
+  const shots = { a: hero.querySelector('.shot[data-v="a"]'), b: hero.querySelector('.shot[data-v="b"]') };
+  const garnish = { a: hero.querySelector('[data-slot-src="variant_a_garnish"]'), b: hero.querySelector('[data-slot-src="variant_b_garnish"]') };
+  const names = { a: hero.querySelector('[data-slot="variant_a_name"]'), b: hero.querySelector('[data-slot="variant_b_name"]') };
+  const layers = [...hero.querySelectorAll(".layer")];
+  const cards = [...hero.querySelectorAll(".card")];
+  const bits = [...hero.querySelectorAll(".bit")].map((el, i) => ({ el, inner: el.firstElementChild, i, rx: 0, ry: 0, angle: Math.random() * 360, baseX: 0, baseY: 0 }));
+
+  let variant = "a", busy = false;
+
+  // --- media: an image counts only once it has actually loaded ---------------------------------
+  const loaded = (img) => !!img.getAttribute("src") && img.complete && img.naturalWidth > 0;
+  function paintProduct(v) {
+    const ok = loaded(shots[v]);
+    shots.a.hidden = !(v === "a" && ok);
+    shots.b.hidden = !(v === "b" && ok);
+    can.hidden = ok;
+    can.dataset.variant = v;
+    canLabel.textContent = names[v].textContent;
+  }
+  function paintBits(v) {
+    const img = garnish[v];
+    for (const layer of layers) {
+      layer.dataset.kind = v;
+      const ok = loaded(img);
+      layer.classList.toggle("has-img", ok);
+      if (ok) layer.style.setProperty("--garnish", `url("${encodeURI(img.getAttribute("src"))}")`);
+    }
+  }
+  for (const img of [...Object.values(shots), ...Object.values(garnish)]) {
+    const repaint = () => { if (!busy) { paintProduct(variant); paintBits(variant); } };
+    img.addEventListener("load", repaint);
+    img.addEventListener("error", () => { img.removeAttribute("src"); repaint(); });
+  }
+  for (const thumb of hero.querySelectorAll(".thumb")) {
+    const img = thumb.querySelector("img");
+    const sync = () => thumb.classList.toggle("has-img", loaded(img));
+    img.addEventListener("load", sync);
+    img.addEventListener("error", () => { img.removeAttribute("src"); sync(); });
+    sync();
+  }
+  // Keep the can label in step with edits to the flavour name.
+  new MutationObserver(() => paintProduct(variant)).observe(names.a, { childList: true, characterData: true, subtree: true });
+  new MutationObserver(() => paintProduct(variant)).observe(names.b, { childList: true, characterData: true, subtree: true });
+  paintProduct(variant);
+  paintBits(variant);
+
+  // --- pointer ----------------------------------------------------------------------------------
+  const mouse = { x: 0, y: 0, px: -1e4, py: -1e4 }, cur = { x: 0, y: 0 };
+  hero.addEventListener("pointermove", (e) => {
+    const r = hero.getBoundingClientRect();
+    mouse.x = (e.clientX - r.left) / r.width - 0.5;
+    mouse.y = (e.clientY - r.top) / r.height - 0.5;
+    mouse.px = e.clientX; mouse.py = e.clientY;
+  });
+  hero.addEventListener("pointerleave", () => { mouse.x = mouse.y = 0; mouse.px = mouse.py = -1e4; });
+
+  // --- frame loop: tilt, parallax, repulsion, float ---------------------------------------------
+  const DUR = [5.5, 7, 6.2, 8, 5, 6.8, 9.5, 10.5, 8.8];
+  const RADIUS = 320, PUSH = -70;
+  let running = false, raf = 0;
+  function frame(now) {
+    const t = now / 1000;
+    cur.x += (mouse.x - cur.x) * 0.06;
+    cur.y += (mouse.y - cur.y) * 0.06;
+    tilt.style.transform = `perspective(1000px) rotateY(${cur.x * 28}deg) rotateX(${-cur.y * 14}deg) rotate(16deg)`;
+    layers[1].style.transform = `translate(${cur.x * 50}px, ${cur.y * 50}px)`;
+    layers[0].style.transform = `translate(${cur.x * -25}px, ${cur.y * -25}px)`;
+    for (const b of bits) {
+      let tx = 0, ty = 0, speed = 1;
+      if (finePointer) {
+        const r = b.el.getBoundingClientRect();
+        const dx = mouse.px - (r.left + r.width / 2), dy = mouse.py - (r.top + r.height / 2);
+        const d = Math.hypot(dx, dy);
+        if (d < RADIUS && d > 0) {
+          const force = (RADIUS - d) / RADIUS;
+          tx = (dx / d) * force * PUSH;
+          ty = (dy / d) * force * PUSH;
+          speed = 1 + force * 4;
+        }
+      }
+      b.rx += (tx - b.rx) * 0.1;
+      b.ry += (ty - b.ry) * 0.1;
+      b.angle += 0.2 * speed;
+      const phase = (t + b.i * 0.7) * (Math.PI * 2 / DUR[b.i % DUR.length]);
+      b.el.style.transform = `translate(${b.rx + b.baseX}px, ${b.ry + b.baseY + Math.sin(phase) * 14}px) rotate(${b.angle + Math.cos(phase) * 6}deg)`;
+    }
+    raf = requestAnimationFrame(frame);
+  }
+
+  // --- bubbles ----------------------------------------------------------------------------------
+  const bubbleBox = hero.querySelector(".bubbles");
+  const pool = Array.from({ length: 36 }, () => {
+    const el = document.createElement("span");
+    el.className = "bubble";
+    bubbleBox.append(el);
+    return { el, free: true };
+  });
+  let bubbleTimer = 0;
+  function spawnBubble() {
+    const slot = pool.find((p) => p.free);
+    if (!slot) return;
+    slot.free = false;
+    const size = 8 + Math.random() * 18;
+    Object.assign(slot.el.style, { width: `${size}px`, height: `${size}px`, left: `${Math.random() * 100}%` });
+    const rise = hero.clientHeight * 1.1;
+    const peak = 0.2 + Math.random() * 0.4;
+    slot.el.animate([
+      { transform: "translate(0, 0)", opacity: 0 },
+      { opacity: peak, offset: 0.1 },
+      { opacity: peak, offset: 0.9 },
+      { transform: `translate(24px, ${-rise}px)`, opacity: 0 },
+    ], { duration: 5000 + Math.random() * 5000, easing: "linear" }).onfinish = () => { slot.free = true; };
+  }
+
+  // --- run only while visible -------------------------------------------------------------------
+  let inView = true;
+  function setRunning() {
+    const next = inView && !document.hidden && !reduce;
+    if (next === running) return;
+    running = next;
+    if (running) {
+      raf = requestAnimationFrame(frame);
+      bubbleTimer = setInterval(spawnBubble, 420);
+    } else {
+      cancelAnimationFrame(raf);
+      clearInterval(bubbleTimer);
+    }
+  }
+  new IntersectionObserver(([e]) => { inView = e.isIntersecting; setRunning(); }).observe(hero);
+  document.addEventListener("visibilitychange", setRunning);
+  if (reduce) tilt.style.transform = "rotate(16deg)";
+
+  // --- flavour switch ---------------------------------------------------------------------------
+  const wait = (anim) => anim.finished.catch(() => {});
+  async function switchTo(v) {
+    if (busy || v === variant) return;
+    busy = true;
+    variant = v;
+    hero.dataset.variant = v;
+    for (const c of cards) c.setAttribute("aria-pressed", String(c.dataset.v === v));
+
+    if (reduce) {
+      const product = hero.querySelector(".product");
+      await wait(product.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, fill: "forwards" }));
+      paintProduct(v); paintBits(v);
+      await wait(product.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, fill: "forwards" }));
+      busy = false;
+      return;
+    }
+
+    // Product: flip edge-on with blur, swap at the peak, settle back with an overshoot.
+    const productDone = (async () => {
+      await wait(spin.animate([{ transform: "rotateY(0deg)", filter: "blur(0px)" }, { transform: "rotateY(90deg)", filter: "blur(12px)" }], { duration: 520, easing: "ease-in", fill: "forwards" }));
+      paintProduct(v);
+      await wait(spin.animate([{ transform: "rotateY(-90deg)", filter: "blur(12px)" }, { transform: "rotateY(0deg)", filter: "blur(0px)" }], { duration: 1200, easing: "cubic-bezier(0.34, 1.56, 0.64, 1)", fill: "forwards" }));
+    })();
+
+    // Bits: implode to the centre, change kind, explode to new random offsets.
+    const hr = hero.getBoundingClientRect();
+    const cx = hr.left + hr.width / 2, cy = hr.top + hr.height / 2;
+    const toCentre = (b) => {
+      const r = b.el.getBoundingClientRect();
+      return `translate(${cx - (r.left + r.width / 2)}px, ${cy - (r.top + r.height / 2)}px) scale(0.1)`;
+    };
+    await Promise.all(bits.map((b) => wait(b.inner.animate([{ transform: "none", opacity: 1 }, { transform: toCentre(b), opacity: 0 }], { duration: 480, easing: "ease-in", fill: "forwards" }))));
+    await new Promise((r) => setTimeout(r, 280));
+    paintBits(v);
+    for (const b of bits) { b.baseX = (Math.random() - 0.5) * 200; b.baseY = (Math.random() - 0.5) * 200; }
+    await new Promise((r) => requestAnimationFrame(r)); // let the loop move bits to their new base first
+    await Promise.all(bits.map((b) => wait(b.inner.animate([{ transform: toCentre(b), opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 900, easing: "cubic-bezier(0.34, 1.56, 0.64, 1)", fill: "forwards" }))));
+    await productDone;
+    busy = false;
+  }
+  for (const c of cards) c.addEventListener("click", () => switchTo(c.dataset.v));
+</script>
+</body>
+</html>

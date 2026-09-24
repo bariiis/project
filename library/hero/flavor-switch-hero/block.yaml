@@ -1,0 +1,162 @@
+slug: flavor-switch-hero
+name: Flavor Switch Hero
+category: hero
+tone: dark
+moods: [playful, bold]
+tier: power
+targets: [html, react, next]
+summary: >-
+  One-screen product hero for a two-flavour drink: the product tilts toward the pointer among
+  floating bits that dodge the cursor and rising bubbles, and picking a flavour card flips the
+  product, morphs the background colour and bursts the bits out in the new flavour.
+
+tokens:
+  colors:
+    ink: "#0b0b0c"
+    paper: "#f2efe8"
+    muted: "#8a877f"
+    ember: "#ff5a1f"
+  fonts:
+    - { family: Instrument Serif, weights: [400], role: display }
+    - { family: Instrument Serif, weights: [400], role: display, italic: true }
+    - { family: Geist, weights: [400, 500], role: body }
+  radii:
+    pill: "999px"
+  easings:
+    out-expo: "cubic-bezier(0.16, 1, 0.3, 1)"
+    back: "cubic-bezier(0.34, 1.56, 0.64, 1)"
+
+slots:
+  - { key: brand, label: Marka adı, type: text, default: Fizzwell }
+  - { key: cta_top, label: Üst buton, type: text, default: Find a store }
+  - { key: headline_1, label: Başlık 1. satır, type: text, default: Sparkling }
+  - { key: headline_2, label: Başlık 2. satır (italik), type: text, default: on purpose }
+  - { key: lede, label: Açıklama, type: textarea, default: "Real fruit, a sharp fizz and not a gram of sugar. Cold from the fridge in under a minute." }
+  - { key: cta_label, label: Buton metni, type: text, default: Order a case }
+  - { key: note, label: Alt not, type: text, default: Brewed in small batches }
+  - { key: side_headline_1, label: Yan başlık 1. satır, type: text, default: "Zero sugar," }
+  - { key: side_headline_2, label: Yan başlık 2. satır (italik), type: text, default: all bite }
+  - { key: variant_a_name, label: A lezzet adı, type: text, default: Raspberry Rise }
+  - { key: variant_a_price, label: A fiyat, type: text, default: "$3.20" }
+  - { key: variant_b_name, label: B lezzet adı, type: text, default: Lime Spark }
+  - { key: variant_b_price, label: B fiyat, type: text, default: "$3.20" }
+  - { key: variant_a_image, label: A ürün görseli, type: image, default: "", usage: "flavour A product cut-out, transparent PNG, portrait about 3:5 (hero and card thumbnail)" }
+  - { key: variant_b_image, label: B ürün görseli, type: image, default: "", usage: "flavour B product cut-out, transparent PNG, portrait about 3:5 (hero and card thumbnail)" }
+  - { key: variant_a_garnish, label: A süs görseli, type: image, default: "", usage: "flavour A garnish (fruit, leaf) as a small square transparent PNG, repeated as the floating bits" }
+  - { key: variant_b_garnish, label: B süs görseli, type: image, default: "", usage: "flavour B garnish as a small square transparent PNG, repeated as the floating bits" }
+
+structure: |
+  `<section>` height `100svh`, min-height `40rem`, `overflow: hidden`, `isolation: isolate`, side
+  padding 48px (20px below 900px). No scrolling behaviour; everything is pointer- and click-driven.
+  No animation library: CSS, Web Animations API and one requestAnimationFrame loop.
+
+  **Background**: `radial-gradient(circle at 50% 55%, var(--bg-in) 0%, var(--bg-mid) 50%,
+  var(--bg-out) 100%)`. The three stops are registered with `@property` (`syntax: "<color>"`) so
+  they transition over 1400ms ease-in-out when the flavour changes. Flavour A: `#b0305f`,
+  `#5a0f30`, `#16040c`, accent `#ffc2d4`. Flavour B: `#7f9c12`, `#36470a`, `#0b1103`, accent
+  `#eaff8a`. The accent (`--accent`) colours the italic headline lines, the CTA's plus disc, the
+  active card border and focus rings, and fades with the background.
+
+  **Layers** (bottom → top): bubbles (z 0) · back bits (z 1) · product (z 2) · copy columns (z 3) ·
+  front bits (z 4) · top bar (z 5). All decorative layers are `aria-hidden` and ignore the pointer.
+
+  **Product** (centred at 50% / 54%, width `min(30vw, 340px)`, aspect 3:5): three nested boxes.
+  The outer box bobs `translateY(0 → -16px → 0)` over 6s ease-in-out forever. The middle box is set
+  every frame to `perspective(1000px) rotateY(x × 28deg) rotateX(-y × 14deg) rotate(16deg)`, where
+  x/y is the pointer position in the section from -0.5 to 0.5, lerped by 0.06 per frame and
+  returning to 0 on pointer leave. The inner box is animated by the flavour switch. Inside: one
+  `<img>` per flavour (`variant_a_image`, `variant_b_image`, `object-fit: contain`,
+  `drop-shadow(0 30px 40px ink/.45)`). An image counts only once it has loaded
+  (`complete && naturalWidth > 0`); a failed image drops its src.
+
+  **Product fallback** (no loaded image for the current flavour): a CSS can, inset 22% left/right
+  and 4% top/bottom, `border-radius: 22% / 7%`, body `linear-gradient(90deg, k3 0%, k1 16%,
+  k2 30%, k1 46%, k3 100%)` (A: k1 `#d8457a`, k2 `#ffb3c9`, k3 `#5e0d2c`; B: `#a6c928`,
+  `#eaff9a`, `#334208`), metal rims as 7%-high ellipses of
+  `linear-gradient(90deg, #6e6e72, #e9e9ee 35%, #8d8d93 70%, #4b4b50)` at top and bottom, and a
+  band at 40–66% height (ink/.22) holding the current flavour name in Instrument Serif italic
+  `clamp(1rem, 2.2vw, 1.9rem)`. The label follows edits to the name.
+
+  **Floating bits**: six front bits and three back bits (back at opacity .6). Position (top/left)
+  and size: front 62%/26% 120px, 66%/36% 64px, 30%/66% 150px, 12%/50% 84px, 86%/36% 72px,
+  58%/72% 104px; back 16%/40% 60px, 52%/56% 50px, 80%/32% 56px (all × 0.6 below 900px, where the front layer also drops under the copy so text stays readable). Each bit
+  shows the flavour's garnish image (`contain`) or, without one, a glossy sphere
+  `radial-gradient(circle at 32% 28%, white/.75 0 7%, c1 20%, c2 62%, c3 100%)` (A: `#ff7aa2`,
+  `#c21d55`, `#4a0620`; B: `#e2f56a`, `#7da51a`, `#203006`), with
+  `drop-shadow(0 12px 18px ink/.3)`. Each bit is two elements: the outer one is moved by the frame
+  loop, the inner one by the switch, so the two never fight over `transform`.
+
+  **Frame loop** (one rAF, runs only while the section intersects the viewport and the tab is
+  visible): front layer `translate(x × 50px, y × 50px)`, back layer `× -25px`. Per bit, with a fine
+  pointer within 320px of the bit's centre: `force = (320 - d) / 320`, target offset
+  `= direction × force × -70px`, spin multiplier `1 + force × 4`. Offsets lerp by 0.1 per frame;
+  angle grows `0.2° × multiplier` per frame. Float: phase `(t + i × 0.7) × 2π / dur[i]` with
+  `dur = [5.5, 7, 6.2, 8, 5, 6.8, 9.5, 10.5, 8.8]` s; `translateY(sin × 14px)` and
+  `rotate(cos × 6deg)` on top of the base offset. Touch devices get float and parallax, no push.
+
+  **Bubbles**: a pool of 36 rings (1px white/.55 border, `radial-gradient(circle at 32% 30%,
+  white/.7 0 12%, white/.08 30%, transparent 62%)`). Every 420ms a free ring starts at a random
+  left, `bottom: -40px`, size 8–26px, and rises by 110% of the section height with +24px drift
+  over 5–10s linear; opacity 0 → peak (0.2–0.6) by 10%, holds to 90%, → 0. Rings return to the
+  pool when done. Spawning stops with the frame loop.
+
+  **Top bar** (top 28px): **{{brand}}** (Geist 500 15px, preceded by a 10 × 16px outlined can
+  glyph) on the left; a glass pill **{{cta_top}}** (42px high, white/.08 fill, white/.18 border,
+  `blur(14px)`) on the right.
+
+  **Left column** (from 104px to 40px above the bottom, max-width 34rem, gap 26px): `<h1>`
+  **{{headline_1}}** and, on its own line in italic accent, **{{headline_2}}** (Instrument Serif
+  400, `clamp(3.4rem, 8vw, 9rem)`, line-height .86, letter-spacing -0.03em); **{{lede}}** (16px,
+  line-height 1.55, max 34ch, paper/.78); a glass CTA pill **{{cta_label}}** (54px high, ink/.35
+  fill, white/.18 border, blur 14px, 42px accent disc with `+`, lifts 3px on hover); and pushed to
+  the bottom **{{note}}** (12px 500 uppercase, letter-spacing .16em, paper/.62, preceded by a
+  24px rule).
+
+  **Right column** (right-aligned, space-between): two flavour cards (`<button aria-pressed>`,
+  132px wide, padding 76px 12px 14px, radius 24px, white/.06 fill, white/.16 border, blur 10px;
+  the active one has an accent border). Each card's thumbnail (84 × 118px) overhangs the card top
+  by 46px and on hover moves `translateY(-24px) rotate(-10deg) scale(1.08)` over 500ms `--ease-back`;
+  it shows the flavour's product image or a mini CSS can. Under it the name
+  (**{{variant_a_name}}** / **{{variant_b_name}}**, 13px 500) and price
+  (**{{variant_a_price}}** / **{{variant_b_price}}**, 12px, paper/.65, tabular). At the bottom
+  `<h2>` **{{side_headline_1}}** / italic accent **{{side_headline_2}}** (Instrument Serif
+  `clamp(2.4rem, 5vw, 5.2rem)`, line-height .9).
+
+  **Flavour switch** (click on the inactive card; ignored while a switch runs, never queued):
+  1. Set the section's flavour (background, accent) and `aria-pressed` at once.
+  2. Product inner box: `rotateY(0 → 90deg)` with `blur(0 → 12px)` over 520ms ease-in; at the peak
+     swap to the new flavour's image or can; then `rotateY(-90deg → 0)` with `blur(12px → 0)`
+     over 1200ms `--ease-back`.
+  3. Bits (in parallel): each inner element moves to the section centre with `scale(.1)`,
+     opacity 0 over 480ms ease-in; hold 280ms; switch garnish or sphere colours; give every bit a
+     new random base offset within ±100px; then return from the centre to its place, scale 1,
+     opacity 1 over 900ms `--ease-back`.
+  4. Unlock when both the product and the bits are done.
+
+  **Below 900px**: columns stack; headline `clamp(2.6rem, 12vw, 4rem)`; lede 15px; note and side
+  headline hidden; cards centred at the bottom; product at 57% height, width `min(40vw, 190px)`.
+
+  **Reduced motion**: no bob, tilt, bits motion or bubbles; the switch is a 200ms fade out and
+  200ms fade in of the product with the swap between, bits change colour in place.
+
+parameters: |
+  - Background stop transition 1400ms ease-in-out via @property colours
+  - Tilt: rotateY x × 28deg, rotateX -y × 14deg, base rotate 16deg, pointer lerp 0.06
+  - Bob ±16px over 6s; product width min(30vw, 340px), aspect 3:5, centre 50% / 54%
+  - Parallax front × 50px, back × -25px
+  - Push radius 320px, strength -70px, lerp 0.1, spin 0.2°/frame × (1 + force × 4)
+  - Float 14px / 6deg, durations [5.5, 7, 6.2, 8, 5, 6.8, 9.5, 10.5, 8.8] s, phase offset 0.7 s per bit
+  - Bubbles: pool 36, every 420ms, 8–26px, 5–10s, +24px drift, peak opacity 0.2–0.6
+  - Switch: flip 520ms ease-in to 90° + blur 12px, back 1200ms --ease-back; bits implode 480ms,
+    hold 280ms, explode 900ms --ease-back to new offsets within ±100px
+
+variants:
+  react: |
+    Keep the pointer, bit state and animation handles in refs and drive the loop from one
+    `useEffect` with rAF, IntersectionObserver and visibilitychange cleanup. Only the active
+    flavour and `busy` live in state. Use `element.animate()` for the switch, not re-renders.
+  next: |
+    Client component. Use `next/image` for the product shots (`priority` only for the active
+    flavour). If the brand has a 3D model (GLB) instead of cut-outs, swap the product box for
+    `@google/model-viewer` and map the same numbers to `cameraOrbit`:
+    `${x × 28 + spin}deg ${90 - y × 14}deg auto`, with the spin tweened 0 → 90 (swap) → 360.

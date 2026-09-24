@@ -62,7 +62,7 @@ notlarıyla değişir. B formatı "Power" katmanında **kaynak kod indirme** ola
 | Önceden üretilmiş video geçişleriyle durum makinesi | LTX | ileri/geri klip çiftleri, son karede bekleme, `requestVideoFrameCallback` ile "ilk kare hazır" kontrolü, token'lı kilit, sekme gizlenince zaman aşımı duraklatma |
 | İmlecin X konumuyla iki yönlü video scrub | prmpt | ortada ölü bölge; sola gidince bir video, sağa gidince diğeri ileri sarılır (rAF) |
 | Scroll'la ölçeklenen dağınık galeri | prmpt | kart `scale = min(1, (vh - top)/(vh*0.6))`, `transform-origin: right bottom`, siyah panel ilk 100vh'de yukarı kayar |
-| İmlece doğru eğilen 3D model + itilen parçacıklar | Soda | `<model-viewer>`, imleç kuvvet alanı ile itilen yüzen 3D objeler, yükselen baloncuklar, lezzet değiştirince gradient geçişi |
+| İmlece doğru eğilen 3D model + itilen parçacıklar | Soda | `<model-viewer>`, imleç kuvvet alanı ile itilen yüzen 3D objeler, yükselen baloncuklar, lezzet değiştirince gradient geçişi. `flavor-switch-hero` olarak uygulandı: 3D model yerine ürün görseli + CSS 3D eğilme ve "flip-swap", görsel yoksa CSS kutu |
 | Üçlü seçici (öne çıkan + iki yan slot) | SpaceEdu | tıklanan yan öğe öne çıkar, kalan ikisi slotları doldurur; video `data-src` ile ilk kullanımda yüklenir; reduced-motion için durağan görsel |
 
 Bu liste `library/` için kategori ve etiket (mood) önerilerinin kaynağıdır. Her teknik tek başına bir
@@ -108,3 +108,10 @@ Bu liste `library/` için kategori ve etiket (mood) önerilerinin kaynağıdır.
   isteğe bağlı bir `acceptance` alanı eklemek değerli olur (sonraki iş).
 - **Tembel medya.** SpaceEdu, videoları `data-src` ile ilk kullanımda yüklüyor. Çok medyalı bloklarda
   varsayılan kural bu olmalı.
+- **3D asset'e bağlı teknikler.** Soda'nın etkisi GLB modellere dayanıyor. Kullanıcıların çoğunda
+  model yok, ürün fotoğrafı var. Bu yüzden teknik görsel slot'una indirgenir (şeffaf PNG + CSS 3D
+  transform, yedek olarak CSS ile çizilmiş ürün). GLB kullanımı `variants` notunda anlatılır.
+  Ayrı bir `model` slot tipi ileride eklenebilir.
+- **Kütüphanesiz koreografi.** GSAP ile yapılan renk ve dönüş geçişleri `@property` renkleri ve Web
+  Animations API ile aynı şekilde kurulabiliyor. Döngünün ve geçişin aynı `transform`'u yazmaması
+  için objeler iki katmanlı (dış: döngü, iç: geçiş).
