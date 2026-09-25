@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Scene Switch Hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --color-ink: #0b0b0c;
+    --color-paper: #f2efe8;
+    --color-muted: #8a877f;
+    --color-ember: #ff5a1f;
+    --radius-pill: 999px;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-glass: cubic-bezier(0.22, 1, 0.36, 1);
+    --pad: 40px;
+  }
+  @media (max-width: 767px) { :root { --pad: 20px; } }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--color-ink); color: var(--color-paper); font-family: "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  :focus-visible { outline: 2px solid var(--color-ember); outline-offset: 3px; }
+
+  .hero { position: relative; height: 100svh; min-height: 36rem; overflow: hidden; isolation: isolate; background: #1b2433; }
+  .media, .media video, .media canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .media { z-index: -2; }
+  .media video { object-fit: cover; opacity: 0; }
+  .media video.is-visible { opacity: 1; }
+  .media canvas[hidden] { display: none; }
+  .shade { position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(to bottom, rgb(11 11 12 / 0.45), transparent 26%, transparent 70%, rgb(11 11 12 / 0.5)); }
+
+  .top { position: absolute; top: 28px; left: var(--pad); right: var(--pad); display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 500; }
+  .brand i { width: 10px; height: 10px; background: var(--color-ember); }
+  .state { color: rgb(242 239 232 / 0.7); font-variant-numeric: tabular-nums; }
+  h1 { position: absolute; left: var(--pad); right: var(--pad); top: 13vh; text-align: center; font-family: "Instrument Serif", serif; font-weight: 400; font-size: clamp(2.6rem, 6vw, 5.6rem); line-height: 0.95; letter-spacing: -0.03em; text-wrap: balance; }
+
+  /* Glass controller: label | option A | option B | reset, with a sliding capsule. */
+  .controller { position: absolute; left: 50%; bottom: 9vh; transform: translateX(-50%); width: min(760px, calc(100% - 2 * var(--pad))); height: 64px; --cap-left: -4px; --cap-width: calc(25% + 4px); --glass-x: 24%; --glass-y: 8%; }
+  .track, .capsule { position: absolute; border-radius: var(--radius-pill); pointer-events: none; }
+  .track { inset: 4px 0 0; height: 56px; background: rgb(24 30 44 / 0.34); border: 1px solid rgb(255 255 255 / 0.2); backdrop-filter: blur(9px) saturate(126%); -webkit-backdrop-filter: blur(9px) saturate(126%); box-shadow: 0 14px 38px rgb(4 10 20 / 0.18), inset 1px 1px 0 rgb(255 255 255 / 0.45), inset -1px -1px 0 rgb(20 30 45 / 0.16); }
+  .capsule { top: -1px; height: 66px; left: var(--cap-left); width: var(--cap-width); background: rgb(246 248 255 / 0.22); border: 1px solid rgb(255 255 255 / 0.28); backdrop-filter: blur(13px) saturate(128%); -webkit-backdrop-filter: blur(13px) saturate(128%); box-shadow: 0 11px 28px rgb(4 10 20 / 0.18), inset 1px 1px 0 rgb(255 255 255 / 0.6); transition: left 620ms var(--ease-glass), width 620ms var(--ease-glass); }
+  .track::before, .capsule::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(120% 150% at var(--glass-x) var(--glass-y), rgb(255 255 255 / 0.22), rgb(255 255 255 / 0) 53%); }
+  .cells { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(4, 1fr); align-items: center; }
+  .cell { height: 100%; display: flex; align-items: center; justify-content: center; padding: 0 12px; border: 0; background: none; border-radius: var(--radius-pill); color: inherit; font: 400 clamp(15px, 1.7vw, 20px)/1.2 "Geist", sans-serif; letter-spacing: -0.03em; white-space: nowrap; transition: opacity 420ms var(--ease-glass); }
+  button.cell { cursor: pointer; }
+  button.cell:disabled { cursor: default; opacity: 0.38; }
+  button.cell[aria-pressed="true"] { opacity: 1; }
+  .label { opacity: 0.7; transition: opacity 300ms; }
+  .controller.hot .label { opacity: 0.45; }
+  .status { position: absolute; left: 50%; bottom: calc(9vh - 36px); transform: translateX(-50%); display: flex; gap: 12px; align-items: center; font-size: 13px; color: rgb(242 239 232 / 0.75); white-space: nowrap; }
+  .status button { border: 1px solid rgb(255 255 255 / 0.35); background: none; color: inherit; border-radius: var(--radius-pill); padding: 4px 12px; cursor: pointer; font: inherit; }
+  @media (max-width: 560px) { .cell { font-size: 14px; padding: 0 6px; } .label { display: none; } .cells { grid-template-columns: repeat(3, 1fr); } }
+  @media (prefers-reduced-motion: reduce) { .capsule, .cell { transition: none; } }
+</style>
+</head>
+<body>
+<section class="hero" data-block>
+  <div class="media" aria-hidden="true">
+    <video data-slot-src="a_forward" muted playsinline preload="auto"></video>
+    <video data-slot-src="a_reverse" muted playsinline preload="auto"></video>
+    <video data-slot-src="b_forward" muted playsinline preload="auto"></video>
+    <video data-slot-src="b_reverse" muted playsinline preload="auto"></video>
+    <canvas></canvas>
+  </div>
+  <div class="shade"></div>
+  <div class="top">
+    <span class="brand"><i></i><span data-slot="brand">Northwind</span></span>
+    <span class="state" aria-live="polite"></span>
+  </div>
+  <h1 data-slot="headline">One room, every light</h1>
+
+  <div class="controller" role="group" aria-label="Scene controller">
+    <div class="track"></div>
+    <div class="capsule"></div>
+    <div class="cells">
+      <div class="cell label" data-slot="prompt_label">Choose a scene →</div>
+      <button class="cell" type="button" data-to="a" aria-pressed="false"><span data-slot="option_a">Golden hour</span></button>
+      <button class="cell" type="button" data-to="b" aria-pressed="false"><span data-slot="option_b">After dark</span></button>
+      <button class="cell" type="button" data-reset disabled><span data-slot="reset_label">Reset</span></button>
+    </div>
+  </div>
+  <p class="status" role="status"></p>
+</section>
+<script type="module">
+  const TRANSITION_MS = 1400, FIRST_FRAME_TIMEOUT = 12000;
+  const hero = document.querySelector(".hero");
+  const canvas = hero.querySelector(".media canvas");
+  const controller = hero.querySelector(".controller");
+  const cells = [...controller.querySelectorAll(".cell")];
+  const buttons = cells.filter((c) => c.tagName === "BUTTON");
+  const statusEl = hero.querySelector(".status");
+  const stateEl = hero.querySelector(".state");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const clips = Object.fromEntries([...hero.querySelectorAll("video")].map((v) => [v.dataset.slotSrc, v]));
+  const names = { base: "Base", a: controller.querySelector('[data-slot="option_a"]').textContent, b: controller.querySelector('[data-slot="option_b"]').textContent };
+  // Video mode needs all four clips; otherwise every transition is drawn on the canvas.
+  const videoMode = Object.values(clips).every((v) => v.getAttribute("src"));
+
+  let state = "base", busy = false, token = 0, visible = null;
+
+  // ---- Controller: capsule follows hover/focus, never changes the scene by itself.
+  // The capsule is positioned over the visible cells only (the label hides on narrow screens).
+  function moveCapsule(cell) {
+    const shown = cells.filter((c) => c.offsetParent !== null);
+    const i = Math.max(0, shown.indexOf(cell)), n = shown.length;
+    controller.style.setProperty("--cap-left", i === 0 ? "-4px" : `${(i * 100) / n}%`);
+    controller.style.setProperty("--cap-width", i === 0 || i === n - 1 ? `calc(${100 / n}% + 4px)` : `${100 / n}%`);
+    controller.classList.toggle("hot", cell !== cells[0]);
+  }
+  const home = () => buttons.find((b) => b.getAttribute("aria-pressed") === "true") ?? cells[0];
+  for (const c of buttons) {
+    c.addEventListener("pointerenter", () => !c.disabled && moveCapsule(c));
+    c.addEventListener("focus", () => moveCapsule(c));
+    c.addEventListener("blur", () => moveCapsule(home()));
+  }
+  controller.addEventListener("pointerleave", () => { if (!controller.contains(document.activeElement)) moveCapsule(home()); });
+  controller.addEventListener("pointermove", (e) => {
+    const r = controller.getBoundingClientRect();
+    controller.style.setProperty("--glass-x", `${((e.clientX - r.left) / r.width) * 100}%`);
+    controller.style.setProperty("--glass-y", `${((e.clientY - r.top) / r.height) * 100}%`);
+  }, { passive: true });
+
+  function render() {
+    for (const b of buttons) {
+      if (b.hasAttribute("data-reset")) b.disabled = busy || state === "base";
+      else {
+        b.setAttribute("aria-pressed", String(state === b.dataset.to));
+        b.disabled = busy || state !== "base";
+      }
+    }
+    stateEl.textContent = names[state];
+    moveCapsule(home());
+  }
+
+  // ---- Canvas fallback: three procedural scenes and a radial wipe between them.
+  const SCENES = {
+    base: { sky: ["#1b2433", "#3b4a5e"], floor: "#141a24", glow: "rgba(170,200,255,0.35)", slab: "#0e131b" },
+    a: { sky: ["#3a1a10", "#ff8a4c"], floor: "#2a140c", glow: "rgba(255,190,120,0.75)", slab: "#1a0c08" },
+    b: { sky: ["#07060f", "#261a4a"], floor: "#0a0914", glow: "rgba(160,120,255,0.45)", slab: "#05040b" },
+  };
+  const ctx = canvas.getContext("2d");
+  let W = 0, H = 0, dpr = 1;
+  function size() { dpr = Math.min(devicePixelRatio, 2); W = hero.clientWidth; H = hero.clientHeight; canvas.width = W * dpr; canvas.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+  function paint(key) {
+    const s = SCENES[key];
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.7);
+    sky.addColorStop(0, s.sky[0]); sky.addColorStop(1, s.sky[1]);
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = s.floor; ctx.fillRect(0, H * 0.7, W, H * 0.3);
+    const glow = ctx.createRadialGradient(W / 2, H * 0.62, 0, W / 2, H * 0.62, H * 0.55);
+    glow.addColorStop(0, s.glow); glow.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = glow; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = s.slab; // a single standing form, centred on the floor line
+    const w = Math.min(W * 0.12, 150), h = H * 0.34;
+    ctx.fillRect(W / 2 - w / 2, H * 0.7 - h, w, h);
+    if (key === "b") for (let i = 0; i < 80; i++) { ctx.fillStyle = `rgba(242,239,232,${((i * 37) % 10) / 20})`; ctx.fillRect((i * 173) % W, ((i * 97) % (H * 0.55)), 1.5, 1.5); }
+  }
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  function wipe(from, to) {
+    return new Promise((done) => {
+      // Reach the farthest corner from the wipe centre (50%, 62%).
+      const start = performance.now(), maxR = Math.hypot(W / 2, H * 0.62), dur = reduce ? 1 : TRANSITION_MS;
+      (function step(now) {
+        const t = Math.min(1, (now - start) / dur);
+        paint(from);
+        ctx.save(); ctx.beginPath(); ctx.arc(W / 2, H * 0.62, ease(t) * maxR * 1.05, 0, Math.PI * 2); ctx.clip(); paint(to); ctx.restore();
+        if (t < 1) return requestAnimationFrame(step);
+        paint(to);
+        done();
+      })(start);
+    });
+  }
+
+  // ---- Video mode: seam-safe playback of pre-rendered clips.
+  const once = (el, ev) => new Promise((ok, fail) => {
+    el.addEventListener(ev, ok, { once: true });
+    el.addEventListener("error", () => fail(new Error("media error")), { once: true });
+  });
+  function firstFrame(video) {
+    if ("requestVideoFrameCallback" in video) {
+      return new Promise((ok) => {
+        const check = (_now, meta) => (meta.mediaTime <= 0.5 && video.readyState >= 2 ? ok() : video.requestVideoFrameCallback(check));
+        video.requestVideoFrameCallback(check);
+      });
+    }
+    return once(video, "playing").then(() => new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok))));
+  }
+  function deadline(ms) {
+    // Pauses while the tab is hidden: frame callbacks freeze there and must not count as a failure.
+    return new Promise((_, fail) => {
+      let left = ms, last = performance.now();
+      const tick = () => {
+        const now = performance.now();
+        if (!document.hidden) left -= now - last;
+        last = now;
+        left <= 0 ? fail(new Error("timeout")) : setTimeout(tick, 250);
+      };
+      setTimeout(tick, 250);
+    });
+  }
+  async function playClip(clip, my) {
+    clip.pause();
+    if (clip.currentTime > 0.001) { clip.currentTime = 0; await once(clip, "seeked"); }
+    const frame = firstFrame(clip);
+    await Promise.race([Promise.all([clip.play(), frame]), deadline(FIRST_FRAME_TIMEOUT)]);
+    if (my !== token) return false;
+    for (const v of Object.values(clips)) if (v !== clip) { v.classList.remove("is-visible"); v.pause(); }
+    clip.classList.add("is-visible"); // atomic swap: never crossfade two states
+    visible = clip;
+    await once(clip, "ended"); // stays on its final frame
+    return my === token;
+  }
+
+  async function go(to, clipKey) {
+    if (busy) return;
+    const my = ++token;
+    busy = true; statusEl.textContent = ""; render();
+    try {
+      const done = videoMode ? await playClip(clips[clipKey], my) : (await wipe(state, to), true);
+      if (!done) return;
+      state = to;
+    } catch {
+      statusEl.textContent = "The scene could not load. ";
+      const retry = Object.assign(document.createElement("button"), { type: "button", textContent: "Retry" });
+      retry.addEventListener("click", () => go(to, clipKey), { once: true });
+      statusEl.append(retry);
+    } finally {
+      if (my === token) { busy = false; render(); }
+    }
+  }
+  buttons.forEach((b) => b.addEventListener("click", () => {
+    if (b.hasAttribute("data-reset")) go("base", `${state}_reverse`);
+    else go(b.dataset.to, `${b.dataset.to}_forward`);
+  }));
+
+  if (videoMode) {
+    canvas.hidden = true;
+    visible = clips.a_forward; // base = first frame of the A clip
+    visible.classList.add("is-visible");
+    // A control works only once its own forward + reverse pair can play.
+    const ready = (v) => v.readyState >= 2 || new Promise((ok) => v.addEventListener("loadeddata", ok, { once: true }));
+    busy = true; render();
+    Promise.all(Object.values(clips).map(ready)).then(() => { busy = false; render(); });
+  } else {
+    size(); paint(state);
+    new ResizeObserver(() => { size(); if (!busy) paint(state); }).observe(hero);
+    render();
+  }
+</script>
+</body>
+</html>

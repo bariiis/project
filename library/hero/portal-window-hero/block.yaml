@@ -1,0 +1,112 @@
+slug: portal-window-hero
+name: Portal Window Hero
+category: hero
+tone: dark
+moods: [cinematic, playful]
+tier: power
+targets: [html, react, next]
+summary: >-
+  Starfield hero with a rounded window that tilts toward the pointer and shows a screen-locked
+  scene; clicking it grows the window over the whole screen and swaps the serif headline, and a
+  back button reverses the journey.
+
+tokens:
+  colors:
+    ink: "#0b0b0c"
+    paper: "#f2efe8"
+    muted: "#8a877f"
+    ember: "#ff5a1f"
+    hairline: "rgb(242 239 232 / 0.14)"
+  fonts:
+    - { family: Instrument Serif, weights: [400], role: display }
+    - { family: Instrument Serif, weights: [400], role: display, italic: true }
+    - { family: Geist, weights: [400, 500], role: body }
+  radii:
+    pill: "999px"
+  easings:
+    out-expo: "cubic-bezier(0.16, 1, 0.3, 1)"
+
+slots:
+  - { key: eyebrow, label: Üst etiket, type: text, default: "Field notes · Vol. 3" }
+  - { key: next_label, label: Pencere başlığı, type: text, default: The quiet coast }
+  - { key: headline, label: Başlık (dışarıda), type: text, default: Look closer }
+  - { key: arrived_headline, label: Başlık (içeride, italik), type: text, default: You are here }
+  - { key: back_label, label: Geri butonu, type: text, default: Step back }
+  - { key: portal_media, label: Pencereden görünen görsel, type: image, default: "", usage: scene seen through the window and full-screen after entering }
+
+structure: |
+  `<section>` height `100svh`, min-height `38rem`, `overflow: hidden`, `isolation: isolate`,
+  background `--color-ink`. Side padding 40px (24px below 768px). Everything visual is drawn on one
+  full-section canvas (`z-index: -1`, backing store × `min(dpr, 2)`, `ctx.setTransform(dpr…)`,
+  re-sized with a `ResizeObserver`); the DOM holds only copy and two buttons.
+
+  **Starfield**: `W × H / 5000` stars at random positions, size 0.2–1.4px squares, alpha
+  `0.25 + 0.35 × (0.5 + 0.5 sin(t/900 + phase))`, redrawn every frame.
+
+  **Window hit area**: a transparent `<button aria-label="Step through the window">` centred at
+  50% / 45%, `width: min(340px, 58vw)`, `aspect-ratio: 1 / 1.12`, radius 64px. The canvas reads
+  its `getBoundingClientRect()` every frame, so the drawing always lines up with it.
+
+  **Window drawing** (each frame):
+  - `e` = expansion 0…1. Centre and size interpolate from the button rect to the full section:
+    `cx = bx + (W/2 - bx)·e`, `w = rw + (W - rw)·e` (same for y/h). Corner radius `64·(1 - e)`.
+  - Build the rounded-rect outline in local coordinates: four quarter arcs (starting angles
+    -π/2, 0, π/2, π around corner centres `(±(w/2 - r), ±(h/2 - r))`), 12 steps each.
+  - Project every point with tilt `rx = rotX·(1 - e)`, `ry = rotY·(1 - e)` (degrees):
+    `z = x·sin(ry) - y·sin(rx)`, `p = 900 / (900 + z)`, screen = `(cx + x·cos(ry)·p,
+    cy + y·cos(rx)·p)`.
+  - Clip to that path and draw the `portal_media` asset **cover-fit to the whole section**
+    (not to the window), so the frame moves over a still picture.
+
+  **Tilt** (hover devices only, not with reduced motion): pointer position maps to targets
+  `rotY = (x/width - .5) × 2 × 16°`, `rotX = (y/height - .5) × -2 × 14°`, both reset to 0 on
+  `pointerleave`; each frame `rot += (target - rot) × min(1, dt × 0.008)` with `dt` clamped to
+  40ms.
+
+  **Step through** (click the window): zero the tilt targets, animate `e` 0 → 1 over **1000ms**
+  easeInOutCubic, then add `.inside` to the section: the step counter changes `01 / 02` →
+  `02 / 02`, the back button appears and takes focus. **Step back** removes `.inside` and animates
+  `e` 1 → 0 over the same 1000ms, then returns focus to the window. Both buttons ignore clicks
+  while an animation runs.
+
+  **Media fallback** with no image: a canvas at half resolution with a dusk sky gradient
+  (`#1a0f14 0%`, `#7a2e14 40%`, `#ff8a4c 56%`, `#2a1410 100%`), a radial sun at (50%, 54%) radius
+  30% of the height (`rgba(255,220,180,.95)` → `rgba(255,160,90,.6)` at 20% → transparent ember),
+  and a dark ridge (`#120b0c`) along `y = .58h + .02h·sin(9x/w) + .008h·sin(23x/w)`. The horizon sits inside the window's
+  vertical band so the resting window frames the sunset.
+
+  **Copy:**
+  - top-left 32px: **{{eyebrow}}**; top-right 32px: `01 / 02` (tabular); both Geist 500 13px,
+    muted, the eyebrow uppercase with letter-spacing .14em.
+  - above the window (34px gap), centred: `Next —` (muted) and **{{next_label}}** (Geist 500),
+    14px; fades out when inside.
+  - `<h1>` centred, 40px from the bottom, Instrument Serif 400, `font-size: clamp(3rem, 9vw,
+    9rem)`, line-height .9, letter-spacing -0.03em. Two stacked lines in one grid cell:
+    **{{headline}}** (visible outside) and italic **{{arrived_headline}}** (visible inside).
+    Swapping: the leaving line goes to opacity 0, `translateY(-30px)`, `blur(10px)`; the arriving
+    line comes from `translateY(40px)`, `blur(10px)` — opacity/blur 600ms, transform 900ms
+    `--ease-out-expo`.
+  - back button **{{back_label}}**: centred 32px from the top, pill, `padding: 12px 22px`, 1px
+    `--color-hairline` border, `rgb(11 11 12 / .4)` fill with `backdrop-filter: blur(10px)`,
+    Geist 500 14px; enters from -12px with 400ms fade and 600ms `--ease-out-expo`.
+
+  **Reduced motion:** no tilt, expansion jumps instantly, no text transitions.
+
+parameters: |
+  - Window min(340px, 58vw) × 1.12 at 50% / 45%, radius 64px, 12 arc steps per corner
+  - Projection focal 900 · max tilt 16° (Y) / 14° (X) · tilt lerp min(1, dt × 0.008), dt ≤ 40ms
+  - Expand/collapse 1000ms easeInOutCubic
+  - Stars W·H/5000, 0.2–1.4px, twinkle period 900ms
+  - Headline swap: 600ms opacity/blur, 900ms transform, y +40 / -30px, blur 10px
+
+variants:
+  react: |
+    Put the canvas loop, tilt and expansion in refs inside one `useEffect`; only the `inside` flag
+    lives in state (it drives the copy and buttons). Cancel the rAF and observer on unmount.
+  next: |
+    Client component. Preload the portal image with `<link rel="preload" as="image">` in the page
+    head so the window is never empty on first paint.
+
+demo:
+  next_label: Open water
+  portal_media: bow-wave.webp

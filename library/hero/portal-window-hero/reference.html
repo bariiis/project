@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Portal Window Hero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --color-ink: #0b0b0c;
+    --color-paper: #f2efe8;
+    --color-muted: #8a877f;
+    --color-ember: #ff5a1f;
+    --color-hairline: rgb(242 239 232 / 0.14);
+    --radius-pill: 999px;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --pad: 40px;
+  }
+  @media (max-width: 767px) { :root { --pad: 24px; } }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--color-ink); color: var(--color-paper); font-family: "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  :focus-visible { outline: 2px solid var(--color-ember); outline-offset: 4px; }
+
+  .hero { position: relative; height: 100svh; min-height: 38rem; overflow: hidden; isolation: isolate; background: var(--color-ink); }
+  .hero > canvas { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; display: block; }
+  .hero img[data-slot-src] { display: none; }
+
+  .eyebrow { position: absolute; top: 32px; left: var(--pad); font-size: 13px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-muted); }
+  .step { position: absolute; top: 32px; right: var(--pad); font-size: 13px; font-variant-numeric: tabular-nums; color: var(--color-muted); }
+
+  .portal { position: absolute; left: 50%; top: 45%; width: min(340px, 58vw); aspect-ratio: 1 / 1.12; transform: translate(-50%, -50%); border: 0; border-radius: 64px; background: transparent; cursor: pointer; }
+  .caption { position: absolute; left: 50%; top: calc(45% - min(340px, 58vw) * 0.56 - 34px); transform: translateX(-50%); display: flex; gap: 10px; font-size: 14px; white-space: nowrap; transition: opacity 400ms ease; }
+  .caption b { font-weight: 500; }
+  .caption span:first-child { color: var(--color-muted); }
+
+  h1 { position: absolute; left: var(--pad); right: var(--pad); bottom: 40px; display: grid; font-family: "Instrument Serif", serif; font-weight: 400; font-size: clamp(3rem, 9vw, 9rem); line-height: 0.9; letter-spacing: -0.03em; text-align: center; pointer-events: none; }
+  h1 > span { grid-area: 1 / 1; transition: opacity 600ms var(--ease-out-expo), transform 900ms var(--ease-out-expo), filter 600ms ease; }
+  h1 .arrived { font-style: italic; opacity: 0; transform: translateY(40px); filter: blur(10px); }
+  .inside h1 .away { opacity: 0; transform: translateY(-30px); filter: blur(10px); }
+  .inside h1 .arrived { opacity: 1; transform: none; filter: none; }
+  .inside .caption { opacity: 0; }
+
+  .back { position: absolute; left: 50%; top: 32px; transform: translate(-50%, -12px); padding: 12px 22px; border-radius: var(--radius-pill); border: 1px solid var(--color-hairline); background: rgb(11 11 12 / 0.4); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); color: var(--color-paper); font: 500 14px/1 "Geist", sans-serif; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 400ms ease, transform 600ms var(--ease-out-expo); }
+  .inside .back { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+  .busy .portal, .busy .back { pointer-events: none; }
+  .inside .portal { visibility: hidden; }
+  @media (prefers-reduced-motion: reduce) { h1 > span, .back, .caption { transition: none; } }
+</style>
+</head>
+<body>
+<section class="hero" data-block>
+  <img data-slot-src="portal_media" alt="" />
+  <canvas aria-hidden="true"></canvas>
+  <p class="eyebrow" data-slot="eyebrow">Field notes · Vol. 3</p>
+  <p class="step" aria-live="polite"><span class="step-num">01</span> / 02</p>
+  <p class="caption"><span>Next —</span><b data-slot="next_label">The quiet coast</b></p>
+  <button class="portal" type="button" aria-label="Step through the window"></button>
+  <button class="back" type="button" data-slot="back_label">Step back</button>
+  <h1><span class="away" data-slot="headline">Look closer</span><span class="arrived" data-slot="arrived_headline">You are here</span></h1>
+</section>
+<script type="module">
+  const FOCAL = 900, RADIUS = 64, STEPS = 12, EXPAND_MS = 1000;
+  const MAX_TILT_Y = 16, MAX_TILT_X = 14;
+  const hero = document.querySelector(".hero");
+  const canvas = hero.querySelector("canvas");
+  const ctx = canvas.getContext("2d");
+  const portal = hero.querySelector(".portal");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+  // Media through the window: the user's image, or a procedural horizon at dusk.
+  const src = hero.querySelector("img[data-slot-src]").getAttribute("src");
+  const media = await new Promise((resolve) => {
+    if (!src) return resolve(null);
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+  function fallbackScene(w, h) {
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const g = c.getContext("2d");
+    const sky = g.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, "#1a0f14"); sky.addColorStop(0.4, "#7a2e14"); sky.addColorStop(0.56, "#ff8a4c"); sky.addColorStop(1, "#2a1410");
+    g.fillStyle = sky; g.fillRect(0, 0, w, h);
+    const sun = g.createRadialGradient(w * 0.5, h * 0.54, 0, w * 0.5, h * 0.54, h * 0.3);
+    sun.addColorStop(0, "rgba(255,220,180,0.95)"); sun.addColorStop(0.2, "rgba(255,160,90,0.6)"); sun.addColorStop(1, "rgba(255,90,31,0)");
+    g.fillStyle = sun; g.fillRect(0, 0, w, h);
+    g.fillStyle = "#120b0c";
+    g.beginPath(); g.moveTo(0, h);
+    for (let x = 0; x <= w; x += w / 60) g.lineTo(x, h * 0.58 + Math.sin(x / w * 9) * h * 0.02 + Math.sin(x / w * 23) * h * 0.008);
+    g.lineTo(w, h); g.fill();
+    return c;
+  }
+
+  let dpr, W, H, scene, stars = [];
+  function resize() {
+    dpr = Math.min(devicePixelRatio, 2);
+    W = hero.clientWidth; H = hero.clientHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    scene = media ?? fallbackScene(Math.round(W / 2), Math.round(H / 2));
+    stars = Array.from({ length: Math.round((W * H) / 5000) }, () => [Math.random() * W, Math.random() * H, Math.random() * 1.2 + 0.2, Math.random() * Math.PI * 2]);
+  }
+  resize();
+  new ResizeObserver(resize).observe(hero);
+
+  function drawCover(source) {
+    const sw = source.naturalWidth || source.width, sh = source.naturalHeight || source.height;
+    const s = Math.max(W / sw, H / sh);
+    ctx.drawImage(source, (W - sw * s) / 2, (H - sh * s) / 2, sw * s, sh * s);
+  }
+
+  // Rounded-rect outline in local coordinates, then a fake perspective projection.
+  function outline(w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    const arcs = [[w / 2 - r, -h / 2 + r, -Math.PI / 2], [w / 2 - r, h / 2 - r, 0], [-w / 2 + r, h / 2 - r, Math.PI / 2], [-w / 2 + r, -h / 2 + r, Math.PI]];
+    const pts = [];
+    for (const [cx, cy, a0] of arcs) for (let i = 0; i <= STEPS; i++) {
+      const a = a0 + (i / STEPS) * (Math.PI / 2);
+      pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+    }
+    return pts;
+  }
+  function project([x, y], rx, ry, cx, cy) {
+    const ax = (rx * Math.PI) / 180, ay = (ry * Math.PI) / 180;
+    const z = x * Math.sin(ay) - y * Math.sin(ax);
+    const p = FOCAL / (FOCAL + z);
+    return [cx + x * Math.cos(ay) * p, cy + y * Math.cos(ax) * p];
+  }
+
+  let rotX = 0, rotY = 0, tX = 0, tY = 0, expansion = 0, last = performance.now();
+  if (matchMedia("(hover: hover)").matches && !reduce) {
+    hero.addEventListener("pointermove", (e) => {
+      const r = hero.getBoundingClientRect();
+      tY = ((e.clientX - r.left) / r.width - 0.5) * 2 * MAX_TILT_Y;
+      tX = ((e.clientY - r.top) / r.height - 0.5) * -2 * MAX_TILT_X;
+    }, { passive: true });
+    hero.addEventListener("pointerleave", () => { tX = tY = 0; });
+  }
+
+  function frame(now) {
+    const dt = Math.min(40, now - last); last = now;
+    rotX += (tX - rotX) * Math.min(1, dt * 0.008);
+    rotY += (tY - rotY) * Math.min(1, dt * 0.008);
+
+    ctx.clearRect(0, 0, W, H);
+    for (const [x, y, s, ph] of stars) {
+      ctx.fillStyle = `rgba(242,239,232,${0.25 + 0.35 * (0.5 + 0.5 * Math.sin(now / 900 + ph))})`;
+      ctx.fillRect(x, y, s, s);
+    }
+
+    const r = portal.getBoundingClientRect(), hr = hero.getBoundingClientRect();
+    const bx = r.left - hr.left + r.width / 2, by = r.top - hr.top + r.height / 2;
+    const e = expansion;
+    const cx = bx + (W / 2 - bx) * e, cy = by + (H / 2 - by) * e;
+    const w = r.width + (W - r.width) * e, h = r.height + (H - r.height) * e;
+    const pts = outline(w, h, RADIUS * (1 - e)).map((p) => project(p, rotX * (1 - e), rotY * (1 - e), cx, cy));
+    ctx.save();
+    ctx.beginPath();
+    pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+    ctx.closePath();
+    ctx.clip();
+    drawCover(scene); // screen-locked: the window moves, the picture does not
+    ctx.restore();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  function animate(from, to) {
+    return new Promise((done) => {
+      const start = performance.now(), dur = reduce ? 1 : EXPAND_MS;
+      (function step(now) {
+        const t = Math.min(1, (now - start) / dur);
+        expansion = from + (to - from) * ease(t);
+        t < 1 ? requestAnimationFrame(step) : done();
+      })(start);
+    });
+  }
+  const num = hero.querySelector(".step-num");
+  portal.addEventListener("click", async () => {
+    hero.classList.add("busy"); tX = tY = 0;
+    await animate(0, 1);
+    hero.classList.add("inside"); num.textContent = "02";
+    hero.classList.remove("busy");
+    hero.querySelector(".back").focus();
+  });
+  hero.querySelector(".back").addEventListener("click", async () => {
+    hero.classList.add("busy"); hero.classList.remove("inside"); num.textContent = "01";
+    await animate(1, 0);
+    hero.classList.remove("busy");
+    portal.focus();
+  });
+</script>
+</body>
+</html>

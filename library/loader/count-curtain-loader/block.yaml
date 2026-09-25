@@ -1,0 +1,77 @@
+slug: count-curtain-loader
+name: Count Curtain Loader
+category: loader
+tone: dark
+moods: [editorial, calm]
+tier: free
+targets: [html, react, next]
+summary: >-
+  Opening curtain in ink: a serif wordmark rises out of a mask while a three-digit counter and a
+  hairline ember bar fill from 000 to 100, then the whole curtain lifts off the page.
+
+tokens:
+  colors:
+    ink: "#0b0b0c"
+    paper: "#f2efe8"
+    muted: "#8a877f"
+    ember: "#ff5a1f"
+  fonts:
+    - { family: Instrument Serif, weights: [400], role: display }
+    - { family: Geist, weights: [400, 500], role: body }
+  easings:
+    out-expo: "cubic-bezier(0.16, 1, 0.3, 1)"
+    curtain: "cubic-bezier(0.76, 0, 0.24, 1)"
+
+slots:
+  - { key: brand, label: Marka adı, type: text, default: Northwind }
+  - { key: tagline, label: Kısa slogan, type: text, default: Independent studio for brands that move. }
+  - { key: status_label, label: Durum yazısı, type: text, default: Loading }
+
+structure: |
+  A curtain `position: fixed; inset: 0; z-index: 100` in `--color-ink` with `--color-paper` text,
+  shown on first paint, before anything else animates. It locks page scroll (`overflow: hidden` on
+  `<html>`) until it has left. Horizontal padding 40px (24px below 768px).
+
+  **Content** (all absolutely positioned inside the curtain):
+  - top-left, 32px from the top: **{{tagline}}**, Geist 400, 14px, line-height 1.5,
+    `--color-muted`, max-width 26ch.
+  - bottom-left, 96px from the bottom: the wordmark **{{brand}}** in Instrument Serif 400,
+    `font-size: clamp(3.5rem, 12vw, 11rem)`, line-height 0.9, letter-spacing -0.03em, inside an
+    `overflow: hidden` box (padding-bottom 0.06em). It rises from `translateY(105%)` to `0` over
+    1000ms `--ease-out-expo`, 100ms after first paint.
+  - bottom-right, 96px from the bottom: a counter in Geist 400,
+    `font-size: clamp(3rem, 8vw, 7rem)`, line-height 0.9, letter-spacing -0.04em,
+    `font-variant-numeric: tabular-nums`, always **three digits** (`000` … `100`), followed by a
+    small `%` at 0.3em in `--color-muted`, top-aligned. Below 768px it moves to the left column,
+    150px from the bottom.
+  - a 1px progress track 64px from the bottom spanning the padding box, `rgb(242 239 232 / 0.16)`,
+    with an `--color-ember` fill that scales on X from 0 (origin left).
+  - a status row 32px from the bottom: **{{status_label}}** on the left and `Est. 2026` on the
+    right, Geist 500, 12px, uppercase, letter-spacing 0.14em, `--color-muted`.
+
+  **Count.** Progress runs 0 → 1 over **1400ms** with easeInOutCubic
+  (`t < .5 ? 4t³ : 1 - (-2t + 2)³ / 2`), driven by `requestAnimationFrame`. Each frame writes
+  `round(p × 100)` zero-padded to three digits and sets the fill to `scaleX(p)`.
+
+  **Exit.** 200ms after reaching 100, the curtain moves `translateY(0) → translateY(-100%)` over
+  **900ms** `--ease-curtain`, while its contents fade to 0 and shift up 16px (opacity 500ms ease,
+  transform 700ms `--ease-out-expo`). When the slide ends: remove the curtain from the DOM, release
+  the scroll lock and dispatch `document.dispatchEvent(new CustomEvent("loader:ready"))`. Other
+  sections start their entrance animations on that event.
+
+  **Reduced motion:** count over 200ms, no slide, remove the curtain immediately at 100.
+
+parameters: |
+  - Count 1400ms easeInOutCubic, three digits, hold 200ms at 100
+  - Curtain exit translateY 0 → -100%, 900ms cubic-bezier(0.76, 0, 0.24, 1); content fade 500ms + rise 16px
+  - Wordmark rise 105% → 0, 1000ms out-expo, delay 100ms
+  - Offsets: tagline top 32px · wordmark/counter bottom 96px · bar bottom 64px · status bottom 32px
+  - Event `loader:ready` on document after removal
+
+variants:
+  react: |
+    Render the curtain from `App` above the page, keep `ready` in context and let sections read it
+    (or listen for the `loader:ready` event). Unmount the curtain when the exit finishes.
+  next: |
+    Mount the curtain in `app/layout.tsx` as a client component so it covers the first paint of
+    every route; skip it on client-side navigations after the first load.

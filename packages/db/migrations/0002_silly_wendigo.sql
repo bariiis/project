@@ -1,0 +1,1 @@
+ALTER TABLE "subscription" ADD COLUMN "provider_updated_at" timestamp with time zone;

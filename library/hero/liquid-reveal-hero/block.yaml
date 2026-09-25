@@ -1,0 +1,106 @@
+slug: liquid-reveal-hero
+name: Liquid Reveal Hero
+category: hero
+tone: light
+moods: [luxe, editorial]
+tier: pro
+targets: [html, react, next]
+summary: >-
+  Full-bleed image hero where the pointer paints a soft, fading brush trail that reveals a second
+  image underneath, with a two-line serif headline and a pill CTA anchored bottom-left.
+
+tokens:
+  colors:
+    ink: "#0b0b0c"
+    paper: "#f2efe8"
+    muted: "#8a877f"
+    ember: "#ff5a1f"
+  fonts:
+    - { family: Instrument Serif, weights: [400], role: display }
+    - { family: Instrument Serif, weights: [400], role: display, italic: true }
+    - { family: Geist, weights: [400, 500], role: body }
+  radii:
+    pill: "999px"
+  easings:
+    out-expo: "cubic-bezier(0.16, 1, 0.3, 1)"
+
+slots:
+  - { key: eyebrow, label: Üst etiket, type: text, default: "Material study, 2026" }
+  - { key: hint, label: İpucu yazısı, type: text, default: Move to reveal }
+  - { key: headline_1, label: Başlık 1. satır, type: text, default: "Surface," }
+  - { key: headline_2, label: Başlık 2. satır (italik), type: text, default: then depth. }
+  - { key: cta_label, label: Buton metni, type: text, default: See the work }
+  - { key: image_base, label: Ana görsel, type: image, default: "", usage: always-visible base image (LCP) }
+  - { key: image_reveal, label: İmleçle açılan görsel, type: image, default: "", usage: image painted along the pointer trail }
+
+structure: |
+  `<section>` height `100svh`, min-height `38rem`, `overflow: hidden`, `isolation: isolate`,
+  bottom corners rounded 28px, background `#d9d4c7` (shown only while images load).
+  Horizontal padding 40px (24px below 768px).
+
+  **Layers** (bottom to top):
+  1. **Base canvas** (`z-index: -3`, fills the section): the `image_base` asset drawn with
+     object-fit cover maths (scale = max(W/w, H/h), centred). Canvas size = section rect ×
+     `min(devicePixelRatio, 2)`; redraw on `ResizeObserver`.
+  2. **Trail canvas** (`z-index: -2`, `pointer-events: none`), same size. It shows the
+     `image_reveal` asset only where the pointer has recently been:
+     - keep an offscreen **cover canvas** with `image_reveal` drawn cover-fit at canvas
+       resolution, and a square **brush canvas** of side `ceil(2 × radius)` where
+       `radius = 160 × dpr`;
+     - on `pointermove` (window, passive) convert to canvas space (× dpr); ignore points more
+       than `radius` outside the section and reset the last point; otherwise interpolate from the
+       last point with `step = max(radius × 0.3, 1)`, at most 60 points per move;
+     - **stamp(x, y)**: clear the brush, fill it with a radial gradient centred in the brush
+       (stops `0 → rgba(255,255,255,1)`, `0.5 → 0.8`, `1 → 0`), switch to `source-in` and draw
+       the matching square of the cover canvas into it, then draw the brush onto the trail canvas
+       at `(x - r, y - r)` with `source-over`;
+     - each animation frame: `fade = drawing ? 0.02 : min(0.02 + idle × 0.004, 0.5)`; paint a
+       full `rgba(0,0,0,fade)` rectangle with `destination-out` so the trail decays; stamp every
+       queued point; after 120 idle frames clear the canvas and stop the loop until the next move.
+  3. **Veil** (`z-index: -1`): `linear-gradient(to bottom, rgb(242 239 232 / .45), transparent 30%,
+     transparent 62%, rgb(242 239 232 / .55))` for legibility.
+  4. Content.
+
+  **Media fallback.** With no `image_base` / `image_reveal` file, generate each image on a canvas:
+  a diagonal linear gradient (base `#e9e3d5 → #cfc6b3`, reveal `#141212 → #2a1208`), three large
+  radial "forms" (base: white 55%, taupe 35%, ink 8%; reveal: ember 85%, light ember 35%,
+  paper 12%) and ±6 / ±9 luminance grain, so the reveal reads as a different photograph.
+
+  **Top row** (28px from the top, space-between, 14px):
+  - left: **{{eyebrow}}**, Geist 500, preceded by a 6px `--color-ember` dot, gap 8px.
+  - right: a 22px ring (1px `rgb(11 11 12 / .35)`) with a 6px ink dot that drifts diagonally
+    ±3px/±2px on a 1.8s infinite loop, then **{{hint}}** in `rgb(11 11 12 / .6)`.
+
+  **Bottom row** (44px from the bottom, space-between, items-end, gap 32px; stacked below 768px):
+  - `<h1>` two masked lines, **{{headline_1}}** / **{{headline_2}}** (second italic), Instrument
+    Serif 400, `font-size: clamp(3.25rem, 8.5vw, 8.75rem)`, line-height 0.92, letter-spacing
+    -0.03em. Each line rises `translateY(105%) → 0` over 1000ms `--ease-out-expo`, the second
+    110ms later, starting on the first frame.
+  - CTA pill: height 54px, `padding: 0 8px 0 24px`, `--color-ink` background, `--color-paper`
+    text, Geist 500 15px, label **{{cta_label}}** followed by a 38px paper circle holding `→`
+    that rotates -45° on hover (300ms). It fades up 12px over 700ms, 350ms after load.
+
+  **Reduced motion:** base image only, no trail canvas listeners, no entrance motion, hint hidden.
+  **Touch:** there is no hover; the trail follows touch-drag `pointermove` events.
+
+parameters: |
+  - Brush radius 160px (× dpr), decay 0.02/frame, idle ramp +0.004/frame capped 0.5, clear after 120 idle frames
+  - Interpolation step max(radius × 0.3, 1), max 60 points per move; brush gradient 1 / 0.8 / 0 at 0 / 0.5 / 1
+  - dpr = min(devicePixelRatio, 2)
+  - Headline 1000ms out-expo, second line +110ms · CTA 700ms, delay 350ms, y 12px
+  - Section radius 0 0 28px 28px · padding 40px (24px < 768px)
+
+variants:
+  react: |
+    Keep the canvases, the point queue and the rAF id in refs; start the loop from the pointer
+    handler and cancel it plus the ResizeObserver on unmount. Load images with `new Image()`.
+  next: |
+    The hero is a client component. Use a plain `<img>` preload (not `next/image`) for the two
+    images because they are drawn into canvases, and mark the base image `fetchPriority="high"`.
+
+demo:
+  eyebrow: "Forest pavilion, 2026"
+  headline_1: "Concrete,"
+  headline_2: then canopy.
+  image_base: atrium.webp
+  image_reveal: canopy-house.webp

@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stage Footer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --color-ink: #0b0b0c;
+    --color-paper: #f2efe8;
+    --color-muted: #8a877f;
+    --color-ember: #ff5a1f;
+    --color-hairline: rgb(242 239 232 / 0.14);
+    --radius-pill: 999px;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-reveal: cubic-bezier(0.05, 0.9, 0.1, 1);
+    --pad: 32px;
+  }
+  @media (max-width: 767px) { :root { --pad: 20px; } }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--color-ink); color: var(--color-paper); font-family: "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  :focus-visible { outline: 2px solid var(--color-ember); outline-offset: 3px; }
+
+  .stage { position: relative; height: 100svh; min-height: 36rem; overflow: hidden; isolation: isolate; background: var(--color-ink); }
+  .media { position: absolute; left: 0; right: 0; bottom: 0; height: 88%; z-index: -2; overflow: hidden; }
+  .media video, .media canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  .media video:not([src]) { display: none; }
+  .media canvas[hidden] { display: none; }
+  .fade { position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: linear-gradient(to bottom, var(--color-ink) 0%, var(--color-ink) 14%, rgb(11 11 12 / 0.6) 34%, rgb(11 11 12 / 0) 58%, rgb(11 11 12 / 0.35) 100%); }
+
+  .head { position: absolute; top: 7vh; left: 50%; transform: translateX(-50%); width: min(92%, 1000px); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 32px; }
+  h2 { font-family: "Instrument Serif", serif; font-weight: 400; font-size: clamp(2.2rem, 4.4vw, 4.2rem); line-height: 1.04; letter-spacing: -0.02em; }
+  h2 .w { display: inline-block; overflow: hidden; vertical-align: bottom; padding-bottom: 0.12em; margin-bottom: -0.12em; }
+  h2 .w > span { display: inline-block; opacity: 0; transform: translateY(105%); filter: blur(16px); transition: opacity 600ms ease, transform 1200ms var(--ease-reveal), filter 1200ms var(--ease-reveal); }
+  .in h2 .w > span { opacity: 1; transform: none; filter: none; }
+  .pill { display: inline-flex; align-items: center; gap: 14px; padding: 18px 30px; border-radius: var(--radius-pill); background: var(--color-ink); border: 1px solid var(--color-hairline); font-weight: 500; font-size: 16px; transition: background 300ms var(--ease-out-expo), color 300ms var(--ease-out-expo), transform 300ms var(--ease-out-expo); }
+  .pill:hover { background: var(--color-paper); color: var(--color-ink); transform: translateY(-2px); }
+  .dot { position: relative; width: 9px; height: 9px; border-radius: 50%; background: var(--color-ember); animation: beat 2s ease-in-out infinite; }
+  .dot::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; background: rgb(255 90 31 / 0.45); animation: ring 2s ease-in-out infinite; }
+  @keyframes beat { 0%, 100% { opacity: 0.55; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); box-shadow: 0 0 12px rgb(255 90 31 / 0.9); } }
+  @keyframes ring { from { transform: scale(0.6); opacity: 0.9; } to { transform: scale(2.3); opacity: 0; } }
+
+  .row { position: absolute; left: var(--pad); right: var(--pad); top: 52%; transform: translateY(-50%); }
+  .row-top { display: flex; justify-content: space-between; align-items: flex-end; font-family: "Instrument Serif", serif; font-size: clamp(1.1rem, 1.6vw, 1.5rem); }
+  .row hr { border: 0; height: 1px; background: var(--color-hairline); margin: 22px 0; }
+  .row-bottom { display: flex; justify-content: space-between; align-items: center; gap: 20px; font-size: 14px; }
+  .row-bottom nav { display: flex; gap: 40px; }
+  .row-bottom nav a { transition: opacity 200ms; } .row-bottom nav a:hover { opacity: 0.7; }
+  .legal { color: rgb(242 239 232 / 0.5); }
+  @media (max-width: 767px) { .row-bottom { flex-direction: column; align-items: flex-start; } .row-bottom nav { gap: 20px; flex-wrap: wrap; } }
+
+  .mark { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); width: max-content; white-space: nowrap; pointer-events: none; font-family: "Instrument Serif", serif; font-size: 21vw; line-height: 0.8; letter-spacing: -0.035em; }
+  .mark .l { display: inline-block; overflow: hidden; vertical-align: bottom; }
+  .mark .l > span { display: inline-block; opacity: 0; transform: translateX(-105%); filter: blur(18px); transition: opacity 500ms ease, transform 1200ms var(--ease-reveal), filter 1200ms var(--ease-reveal); }
+  .in .mark .l > span { opacity: 0.96; transform: none; filter: none; }
+
+  .ring, .label { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 5; opacity: 0; will-change: transform; transition: opacity 300ms ease; }
+  .ring { width: 44px; height: 44px; border: 1.5px solid rgb(242 239 232 / 0.45); border-radius: 50%; }
+  .label { padding: 10px 20px; border-radius: var(--radius-pill); background: rgb(242 239 232 / 0.08); border: 1px solid rgb(242 239 232 / 0.18); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; color: var(--color-ember); }
+  .stage.pointer .ring, .stage.pointer .label { opacity: 1; }
+  @media (hover: none) { .ring, .label { display: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    h2 .w > span, .mark .l > span { transition: none; opacity: 1; transform: none; filter: none; }
+    .dot, .dot::after { animation: none; }
+  }
+</style>
+</head>
+<body>
+<footer class="stage" data-block>
+  <div class="media" aria-hidden="true">
+    <video data-slot-src="bg_video" muted loop playsinline preload="auto"></video>
+    <canvas></canvas>
+  </div>
+  <div class="fade"></div>
+
+  <div class="head">
+    <h2 data-slot="headline">Let’s build the next one together</h2>
+    <a class="pill" href="#"><span data-slot="cta_label">Start a project</span><span class="dot" aria-hidden="true"></span></a>
+  </div>
+
+  <div class="row">
+    <div class="row-top"><span data-slot="left_title">Stay in the loop</span><em data-slot="right_title">Made slowly, shipped often.</em></div>
+    <hr />
+    <div class="row-bottom">
+      <nav aria-label="Footer"><a href="#">Work</a><a href="#">Studio</a><a href="#">Journal</a><a href="#">Contact</a></nav>
+      <span class="legal" data-slot="copyright">© 2026 Northwind</span>
+    </div>
+  </div>
+
+  <p class="mark" data-slot="brand">Northwind</p>
+
+  <span class="ring" aria-hidden="true"></span>
+  <span class="label" aria-hidden="true" data-slot="cursor_label">Say hello</span>
+</footer>
+<script type="module">
+  const stage = document.querySelector(".stage");
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+
+  // Headline: word masks; wordmark: letter masks. Both read the (possibly replaced) slot text.
+  const h2 = stage.querySelector("h2");
+  h2.setAttribute("aria-label", h2.textContent);
+  h2.innerHTML = h2.textContent.trim().split(/\s+/).map((w, i) => `<span class="w" aria-hidden="true"><span style="transition-delay:${i * 90}ms">${esc(w)}</span></span>`).join(" ");
+  const mark = stage.querySelector(".mark");
+  mark.setAttribute("aria-label", mark.textContent);
+  mark.innerHTML = [...mark.textContent.trim()].map((c, i) => `<span class="l" aria-hidden="true"><span style="transition-delay:${400 + i * 80}ms">${c === " " ? "&nbsp;" : esc(c)}</span></span>`).join("");
+  // Long names shrink to fit; short ones cap at 21vw.
+  const fit = () => {
+    mark.style.fontSize = "100px";
+    const inner = stage.clientWidth - 2 * parseFloat(getComputedStyle(stage).getPropertyValue("--pad"));
+    mark.style.fontSize = `${Math.min(innerWidth * 0.21, (100 * inner) / mark.scrollWidth)}px`;
+  };
+  fit(); document.fonts.ready.then(fit); new ResizeObserver(fit).observe(stage);
+  new IntersectionObserver(([e], io) => { if (e.isIntersecting) { stage.classList.add("in"); io.disconnect(); } }, { threshold: 0.35 }).observe(stage);
+
+  // Media: the user's video, or an animated ember/ink field on a canvas.
+  const video = stage.querySelector("video");
+  const canvas = stage.querySelector(".media canvas");
+  // A given video hides the canvas; if it fails to load, the animated fallback takes over.
+  if (video.getAttribute("src")) {
+    canvas.hidden = true;
+    video.addEventListener("error", () => { video.removeAttribute("src"); canvas.hidden = false; startFallback(); }, { once: true });
+    if (!reduce) video.play().catch(() => {});
+  } else startFallback();
+
+  function startFallback() {
+    const ctx = canvas.getContext("2d");
+    let w, h;
+    const size = () => { const r = canvas.getBoundingClientRect(); w = canvas.width = Math.round(r.width / 2); h = canvas.height = Math.round(r.height / 2); };
+    size(); addEventListener("resize", size, { passive: true });
+    const blobs = [[0.25, 0.7, 0.55, "255,90,31"], [0.7, 0.55, 0.5, "255,140,70"], [0.5, 0.95, 0.6, "120,40,12"]];
+    const draw = (t) => {
+      ctx.fillStyle = "#0b0b0c"; ctx.fillRect(0, 0, w, h);
+      blobs.forEach(([x, y, r, rgb], i) => {
+        const cx = (x + Math.sin(t / 4200 + i * 2) * 0.08) * w, cy = (y + Math.cos(t / 5200 + i) * 0.06) * h;
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * w);
+        g.addColorStop(0, `rgba(${rgb},0.55)`); g.addColorStop(1, `rgba(${rgb},0)`);
+        ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+      });
+      if (!reduce) requestAnimationFrame(draw);
+    };
+    requestAnimationFrame(draw);
+  }
+
+  // Cursor: ring follows instantly, glass label lags (lerp 0.08) and hides over the pill.
+  if (matchMedia("(hover: hover)").matches) {
+    const ring = stage.querySelector(".ring"), label = stage.querySelector(".label"), pill = stage.querySelector(".pill");
+    let mx = 0, my = 0, lx = 0, ly = 0, scale = 0, target = 0, overPill = false, first = true;
+    stage.addEventListener("pointermove", (e) => {
+      const r = stage.getBoundingClientRect();
+      mx = e.clientX - r.left; my = e.clientY - r.top;
+      if (first) { lx = mx; ly = my; first = false; }
+      stage.classList.add("pointer");
+      target = overPill ? 0 : 1;
+    }, { passive: true });
+    stage.addEventListener("pointerleave", () => { target = 0; });
+    pill.addEventListener("pointerenter", () => { overPill = true; target = 0; });
+    pill.addEventListener("pointerleave", () => { overPill = false; target = 1; });
+    (function loop() {
+      lx += (mx - lx) * 0.08; ly += (my - ly) * 0.08; scale += (target - scale) * 0.15;
+      ring.style.transform = `translate3d(${mx}px, ${my}px, 0) translate(-50%, -50%) scale(${overPill ? 1.6 : Math.max(scale, 0.001)})`;
+      label.style.transform = `translate3d(${lx}px, ${ly}px, 0) translate(-50%, -50%) scale(${scale})`;
+      requestAnimationFrame(loop);
+    })();
+  }
+</script>
+</body>
+</html>

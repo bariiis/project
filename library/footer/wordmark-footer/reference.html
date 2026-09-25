@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Wordmark Footer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Geist:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --color-ink: #0b0b0c;
+    --color-paper: #f2efe8;
+    --color-muted: #8a877f;
+    --color-ember: #ff5a1f;
+    --color-hairline: rgb(242 239 232 / 0.14);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --pad: 40px;
+  }
+  @media (max-width: 767px) { :root { --pad: 24px; } }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--color-ink); color: var(--color-paper); font-family: "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  ul { list-style: none; }
+  :focus-visible { outline: 2px solid var(--color-ember); outline-offset: 3px; }
+
+  footer { padding: 96px var(--pad) 0; overflow: hidden; }
+  .grid { display: grid; grid-template-columns: 1.6fr repeat(3, 1fr); gap: 48px; }
+  @media (max-width: 899px) { .grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 559px) { .grid { grid-template-columns: 1fr; } }
+  .mark { width: 10px; height: 10px; background: var(--color-ember); }
+  .tagline { font-family: "Instrument Serif", serif; font-size: 32px; line-height: 1.1; max-width: 320px; margin-top: 20px; }
+  .mail { display: inline-block; margin-top: 24px; font-size: 15px; color: var(--color-muted); transition: color .2s; }
+  .mail:hover { color: var(--color-paper); }
+  h3 { font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .14em; color: var(--color-muted); margin-bottom: 18px; }
+  .col a { position: relative; display: inline-block; font-size: 15px; line-height: 2.1; transition: transform 300ms var(--ease-out-expo); }
+  .col a::before { content: ""; position: absolute; left: -12px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--color-ember); transform: scale(0); transition: transform 300ms var(--ease-out-expo); }
+  .col a:hover { transform: translateX(12px); }
+  .col a:hover::before { transform: scale(1); }
+
+  .legal { margin-top: 80px; padding: 20px 0; border-top: 1px solid var(--color-hairline); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--color-muted); }
+  .legal nav { display: flex; gap: 24px; }
+
+  .wordmark { width: max-content; font-family: "Instrument Serif", serif; line-height: .8; white-space: nowrap; margin-bottom: -0.12em; font-size: 100px; }
+  .wordmark span { display: inline-block; transform: translateY(60%); opacity: 0; transition: transform 1100ms var(--ease-out-expo), opacity 1100ms var(--ease-out-expo); }
+  .in .wordmark span { transform: none; opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .wordmark span { transform: none; opacity: 1; transition: none; } }
+</style>
+</head>
+<body>
+<footer data-block>
+  <div class="grid">
+    <div>
+      <div class="mark"></div>
+      <p class="tagline" data-slot="tagline">Analytics for teams who would rather be building.</p>
+      <a class="mail" href="mailto:hello@northwind.dev" data-slot="email">hello@northwind.dev</a>
+    </div>
+    <nav class="col" aria-label="Product"><h3>Product</h3><ul><li><a href="#">Overview</a></li><li><a href="#">Integrations</a></li><li><a href="#">Changelog</a></li><li><a href="#">Status</a></li></ul></nav>
+    <nav class="col" aria-label="Company"><h3>Company</h3><ul><li><a href="#">About</a></li><li><a href="#">Careers</a></li><li><a href="#">Customers</a></li><li><a href="#">Contact</a></li></ul></nav>
+    <nav class="col" aria-label="Resources"><h3>Resources</h3><ul><li><a href="#">Docs</a></li><li><a href="#">Guides</a></li><li><a href="#">API reference</a></li><li><a href="#">Security</a></li></ul></nav>
+  </div>
+  <div class="legal">
+    <span data-slot="copyright">© 2026 Northwind Labs</span>
+    <nav aria-label="Legal"><a href="#">Privacy</a><a href="#">Terms</a><a href="#">Cookies</a></nav>
+  </div>
+  <div class="wordmark" data-slot="brand">Northwind</div>
+</footer>
+<script type="module">
+  const footer = document.querySelector("footer");
+  const mark = document.querySelector(".wordmark");
+  const STAGGER = 45;
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+  mark.setAttribute("aria-label", mark.textContent);
+  mark.innerHTML = [...mark.textContent].map((c, i) => `<span aria-hidden="true" style="transition-delay:${i * STAGGER}ms">${esc(c)}</span>`).join("");
+
+  function fit() {
+    mark.style.fontSize = "100px";
+    const inner = footer.clientWidth - parseFloat(getComputedStyle(footer).paddingLeft) * 2;
+    mark.style.fontSize = `${(100 * inner) / mark.scrollWidth}px`;
+  }
+  new ResizeObserver(fit).observe(footer);
+  document.fonts.ready.then(fit);
+
+  const io = new IntersectionObserver(([e]) => {
+    if (e.isIntersecting) { footer.classList.add("in"); io.disconnect(); }
+  }, { threshold: 0.3 });
+  io.observe(footer);
+</script>
+</body>
+</html>

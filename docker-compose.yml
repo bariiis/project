@@ -1,0 +1,33 @@
+# Local stack. On Coolify, deploy the Dockerfile as the app and add Postgres + MinIO as
+# Coolify-managed resources instead of using this file.
+services:
+  web:
+    build: .
+    ports: ["3000:3000"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://promptsite:promptsite@postgres:5432/promptsite
+      S3_ENDPOINT: http://minio:9000
+    depends_on: [postgres, minio]
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: promptsite
+      POSTGRES_PASSWORD: promptsite
+      POSTGRES_DB: promptsite
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: promptsite
+      MINIO_ROOT_PASSWORD: promptsite-secret
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [miniodata:/data]
+
+volumes:
+  pgdata:
+  miniodata:

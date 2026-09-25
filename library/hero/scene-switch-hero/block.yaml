@@ -1,0 +1,124 @@
+slug: scene-switch-hero
+name: Scene Switch Hero
+category: hero
+tone: dark
+moods: [cinematic, technical]
+tier: power
+targets: [html, react, next]
+summary: >-
+  Full-screen scene with a glass controller: picking an option plays a pre-rendered transition clip
+  and holds its final frame, Reset plays the reverse clip back, with seam-safe video handling.
+
+tokens:
+  colors:
+    ink: "#0b0b0c"
+    paper: "#f2efe8"
+    muted: "#8a877f"
+    ember: "#ff5a1f"
+  fonts:
+    - { family: Instrument Serif, weights: [400], role: display }
+    - { family: Geist, weights: [400, 500], role: body }
+  radii:
+    pill: "999px"
+  easings:
+    out-expo: "cubic-bezier(0.16, 1, 0.3, 1)"
+    glass: "cubic-bezier(0.22, 1, 0.36, 1)"
+
+slots:
+  - { key: brand, label: Marka adı, type: text, default: Northwind }
+  - { key: headline, label: Başlık, type: text, default: "One room, every light" }
+  - { key: prompt_label, label: Kontrol çubuğu etiketi, type: text, default: "Choose a scene →" }
+  - { key: option_a, label: Seçenek A, type: text, default: Golden hour }
+  - { key: option_b, label: Seçenek B, type: text, default: After dark }
+  - { key: reset_label, label: Sıfırla butonu, type: text, default: Reset }
+  - { key: a_forward, label: A geçiş videosu (ileri), type: video, default: "", usage: "base → option A transition; its first frame is the base scene" }
+  - { key: a_reverse, label: A geçiş videosu (geri), type: video, default: "", usage: option A → base transition }
+  - { key: b_forward, label: B geçiş videosu (ileri), type: video, default: "", usage: base → option B transition }
+  - { key: b_reverse, label: B geçiş videosu (geri), type: video, default: "", usage: option B → base transition }
+
+structure: |
+  `<section>` height `100svh`, min-height `36rem`, `overflow: hidden`, `isolation: isolate`,
+  background `#1b2433` (visible only before media paints). Side padding 40px (20px below 768px).
+  Click-driven only: no autoplay, no looping, no audio, no scroll scrubbing.
+
+  **Media layer** (`z-index: -2`): four stacked `<video muted playsinline preload="auto">`
+  elements, `object-fit: cover`, all at `opacity: 0` except the one with `.is-visible`. A shade
+  above (`z-index: -1`): `linear-gradient(to bottom, ink/.45, transparent 26%, transparent 70%,
+  ink/.5)`.
+
+  **States**: `base`, `a`, `b`. From `base`, option A plays `a_forward` and holds its last frame
+  (state `a`); Reset plays `a_reverse` back to `base`. Same for B. An option is only available
+  from `base`; Reset only away from it. On load the first frame of `a_forward` is the base scene.
+
+  **Seam-safe player** (the part a naive build gets wrong):
+  1. On click take a new transition token and lock every control in the same tick (double clicks
+     never queue competing transitions).
+  2. Keep the currently visible frame on screen, paused.
+  3. Pause the target clip; if `currentTime > 0.001` set it to 0 and await `seeked`.
+  4. Register the first-frame wait **before** `play()`: with `requestVideoFrameCallback`, accept a
+     frame only when `metadata.mediaTime <= 0.5` and `readyState >= 2` (a stale end frame carries
+     a large mediaTime); without it, wait for `playing` plus two animation frames. Race
+     `Promise.all([play(), firstFrame])` against a **12s** deadline that pauses while
+     `document.hidden`. A timeout never counts as success.
+  5. If the token changed meanwhile, stop. Otherwise swap visibility atomically (never crossfade
+     two different scenes), pause the other clips, await `ended`, then commit the new state.
+  6. On failure keep the last valid frame, show "The scene could not load." with a **Retry**
+     button in a `role="status"` line under the controller, and unlock the controls.
+  7. Enable the controls only when all clips report `readyState >= 2` (also listen for
+     `loadeddata`; cached media may never fire it again).
+
+  **Fallback** (any of the four videos missing): draw three procedural scenes on a canvas and
+  switch with a radial wipe centred at (50%, 62%) whose radius grows to the distance of the
+  farthest corner × 1.05 over **1400ms** easeInOutCubic, then repaint the new scene in full. Each scene: a vertical sky gradient to 70% height, a floor band, a
+  radial glow at (50%, 62%) radius 55% of the height, and one standing slab
+  (`min(12% width, 150px)` × 34% height) on the floor line. Palettes — base: sky `#1b2433 →
+  #3b4a5e`, floor `#141a24`, glow `rgba(170,200,255,.35)`; A: `#3a1a10 → #ff8a4c`, `#2a140c`,
+  `rgba(255,190,120,.75)`; B: `#07060f → #261a4a`, `#0a0914`, `rgba(160,120,255,.45)` plus 80
+  faint stars.
+
+  **Copy**: top row (28px): a 10px ember square and **{{brand}}** (Geist 500 14px) on the left, the
+  current state name on the right (`aria-live="polite"`). `<h1>` **{{headline}}** centred at
+  `top: 13vh`, Instrument Serif 400, `font-size: clamp(2.6rem, 6vw, 5.6rem)`, line-height .95,
+  letter-spacing -0.03em.
+
+  **Glass controller** (`role="group"`, centred, `bottom: 9vh`, width
+  `min(760px, 100% - 2 × padding)`, height 64px), four equal cells:
+  **{{prompt_label}}** (non-interactive, opacity .7, dropping to .45 while an option is
+  highlighted) | **{{option_a}}** | **{{option_b}}** | **{{reset_label}}**. Cells: Geist 400,
+  `clamp(15px, 1.7vw, 20px)`, letter-spacing -0.03em, nowrap; disabled buttons at opacity .38.
+  - Rear track (`top: 4px`, height 56px, pill): `rgb(24 30 44 / .34)` fill, 1px white/.2 border,
+    `backdrop-filter: blur(9px) saturate(126%)`, shadow `0 14px 38px rgb(4 10 20 / .18)`, inset
+    highlights `1px 1px 0 white/.45` and `-1px -1px 0 rgb(20 30 45 / .16)`.
+  - Foreground capsule (`top: -1px`, height 66px, pill): `rgb(246 248 255 / .22)` fill, 1px
+    white/.28 border, `blur(13px) saturate(128%)`. Its `left`/`width` come **only** from the
+    custom properties `--cap-left` / `--cap-width` (edge cells protrude 4px). Hover or keyboard
+    focus moves it to that cell over 620ms `--ease-glass`; leaving returns it to the active option
+    or the label. Hover never changes the scene.
+  - Both layers carry a `::before` highlight `radial-gradient(120% 150% at var(--glass-x)
+    var(--glass-y), white/.22, transparent 53%)`; pointer movement only updates `--glass-x/-y`.
+  - Below 560px the label cell is hidden and the capsule spans the three buttons.
+
+parameters: |
+  - Fallback wipe 1400ms easeInOutCubic, centre (50%, 62%), radius to farthest corner × 1.05
+  - First-frame deadline 12s, paused while the tab is hidden; mediaTime ≤ 0.5 accepted
+  - Controller bottom 9vh, height 64px, width min(760px, 100% - 2 × pad); capsule 620ms
+  - Track blur 9px / capsule blur 13px; label opacity .7 → .45; disabled opacity .38
+
+variants:
+  react: |
+    Keep the token, the lock and the visible clip in refs, not state, so a click can lock the
+    controls synchronously; only `state` and `busy` render. Clean up frame callbacks, timers and
+    listeners on unmount.
+  next: |
+    Client component. Serve the clips from your storage with range requests enabled, and preload
+    only the two forward clips; fetch the reverse clips after the first interaction.
+
+demo:
+  headline: Something is watching
+  prompt_label: "Wake the forest →"
+  option_a: Approach
+  option_b: Strike
+  a_forward: tiger-approach.mp4
+  a_reverse: tiger-approach-rev.mp4
+  b_forward: tiger-strike.mp4
+  b_reverse: tiger-strike-rev.mp4

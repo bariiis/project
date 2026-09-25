@@ -1,0 +1,71 @@
+slug: ticker-band-cta
+name: Ticker Band CTA
+category: cta
+tone: light
+moods: [bold, editorial]
+tier: free
+targets: [html, react, next]
+summary: >-
+  Light call-to-action card with an infinite ember ticker band across its top edge, an oversized
+  serif headline and a dark pill button whose label rolls to a duplicate on hover.
+
+tokens:
+  colors:
+    ink: "#0b0b0c"
+    paper: "#f2efe8"
+    muted: "#8a877f"
+    ember: "#ff5a1f"
+  fonts:
+    - { family: Instrument Serif, weights: [400], role: display }
+    - { family: Geist, weights: [400, 500], role: body }
+  radii:
+    pill: "999px"
+    card: "28px"
+  easings:
+    out-expo: "cubic-bezier(0.16, 1, 0.3, 1)"
+
+slots:
+  - { key: ticker_text, label: Kayan bant metni, type: text, default: "Ship faster · Sleep better · Know first" }
+  - { key: headline, label: Başlık, type: text, default: Ready when your data is. }
+  - { key: body, label: Açıklama, type: textarea, default: "Connect a source in two minutes. No credit card, no sales call, no lock-in." }
+  - { key: cta_label, label: Buton metni, type: text, default: Get started }
+  - { key: secondary_label, label: İkincil link, type: text, default: Talk to an engineer }
+
+structure: |
+  `<section>` with `padding: 12px` on a `--color-ink` page background (the inset makes the card
+  float). Inside, one card: background `--color-paper`, text `--color-ink`, radius `--radius-card`,
+  `overflow: hidden`.
+
+  **Ticker band** (top of the card, height 44px, background `--color-ember`, text `--color-ink`,
+  Geist 500, 13px, uppercase, letter-spacing `0.14em`). The text **{{ticker_text}}** followed by a
+  6px ink dot is repeated enough times to cover twice the viewport width, laid out in one
+  `display: flex; width: max-content` track. The track translates from `0` to `-50%` linearly
+  over **28s**, looping forever, and pauses while the pointer is over the band.
+
+  **Body** (`padding: clamp(48px, 9vw, 128px) clamp(24px, 6vw, 96px)`), a two-column grid
+  (`1.4fr 1fr`, gap 48px, items-end; one column below 900px):
+  - `<h2>` **{{headline}}**: Instrument Serif 400, `font-size: clamp(3rem, 7.5vw, 7.5rem)`,
+    `line-height: 0.95`, `letter-spacing: -0.03em`. On entering the viewport (once, 25% visible)
+    it rises from `y: 40px, opacity 0` over 1000ms `--ease-out-expo`.
+  - right column: **{{body}}** (Geist 400, 17px, line-height 1.55, `--color-muted`, max-width 360px),
+    then a row (gap 20px, margin-top 28px, items-center):
+    - primary pill **{{cta_label}}**: background `--color-ink`, text `--color-paper`, Geist 500 15px,
+      height 52px, `padding: 0 26px`, radius `--radius-pill`. The label is a 1-line window
+      (`overflow: hidden`, height 1.2em) holding the label twice stacked; on hover the stack
+      translates `-50%` over 450ms `--ease-out-expo`, so the copy rolls up into its duplicate.
+    - text link **{{secondary_label}}** with a 1px underline that scales from `scaleX(1)` to
+      `scaleX(0)` (origin right) on hover, then back from the left on leave.
+  The right column enters 150ms after the heading with the same rise.
+
+parameters: |
+  - Page inset 12px · card radius 28px · ticker height 44px, 28s loop, pause on hover
+  - Heading rise y 40px, 1000ms, threshold 0.25, once · right column delay 150ms
+  - Button height 52px · label roll 450ms
+  - Grid `1.4fr 1fr`, collapses below 900px
+
+variants:
+  react: |
+    Use CSS `@keyframes` for the ticker (it is the one keyframe on the page) and `framer-motion`
+    `whileInView` with `viewport={{ once: true, amount: 0.25 }}` for the rises.
+  next: |
+    Only the section wrapper needs `"use client"` (for `whileInView`); the ticker is pure CSS.

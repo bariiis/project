@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Scatter Scale Gallery</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --color-ink: #0b0b0c;
+    --color-paper: #f2efe8;
+    --color-muted: #8a877f;
+    --color-ember: #ff5a1f;
+    --radius-pill: 999px;
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --pad: 40px;
+  }
+  @media (max-width: 767px) { :root { --pad: 20px; } }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--color-ink); color: var(--color-paper); font-family: "Geist", system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; text-decoration: none; }
+  :focus-visible { outline: 2px solid var(--color-ember); outline-offset: 3px; }
+
+  .gallery { position: relative; padding: 96px var(--pad) 120px; background: var(--color-ink); border-radius: 28px 28px 0 0; overflow: hidden; }
+  .head { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+  .eyebrow { font-size: 13px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-muted); }
+  h2 { margin-top: 14px; font-family: "Instrument Serif", serif; font-weight: 400; font-size: clamp(3rem, 8vw, 8rem); line-height: 0.9; letter-spacing: -0.03em; max-width: 10ch; }
+  .count { font-size: 14px; color: var(--color-muted); font-variant-numeric: tabular-nums; }
+
+  /* 12-column scatter: each card has its own column span and vertical offset. */
+  .grid { margin-top: 72px; display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 20px; row-gap: 56px; }
+  .card { margin: 0; will-change: transform; transform: scale(var(--s, 1)); opacity: var(--o, 1); }
+  .card:nth-child(1) { grid-column: 1 / span 4; transform-origin: right bottom; }
+  .card:nth-child(2) { grid-column: 7 / span 5; margin-top: 140px; transform-origin: left bottom; }
+  .card:nth-child(3) { grid-column: 3 / span 3; transform-origin: right bottom; }
+  .card:nth-child(4) { grid-column: 8 / span 4; margin-top: 60px; transform-origin: left top; }
+  .card:nth-child(5) { grid-column: 1 / span 5; margin-top: 40px; transform-origin: right top; }
+  .card:nth-child(6) { grid-column: 8 / span 3; margin-top: 180px; transform-origin: left bottom; }
+  .frame { position: relative; aspect-ratio: 4 / 5; border-radius: 14px; overflow: hidden; background: var(--ph); }
+  .card:nth-child(2) .frame, .card:nth-child(5) .frame { aspect-ratio: 5 / 4; }
+  .frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .frame img:not([src]) { display: none; }
+  .frame::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgb(255 255 255 / 0.05) 0 2px, transparent 2px 14px); pointer-events: none; }
+  .frame:has(img[src])::after { display: none; }
+  figcaption { display: flex; justify-content: space-between; gap: 12px; margin-top: 12px; font-size: 13px; }
+  figcaption span:last-child { color: var(--color-muted); font-variant-numeric: tabular-nums; }
+  @media (max-width: 767px) {
+    .grid { grid-template-columns: repeat(6, 1fr); row-gap: 40px; }
+    .card:nth-child(odd) { grid-column: 1 / span 5; margin-top: 0; }
+    .card:nth-child(even) { grid-column: 2 / span 5; margin-top: 0; }
+  }
+
+  .end { margin-top: 120px; display: flex; justify-content: center; }
+  .cta { display: inline-flex; align-items: center; gap: 12px; height: 56px; padding: 0 10px 0 26px; border-radius: var(--radius-pill); background: var(--color-paper); color: var(--color-ink); font-weight: 500; font-size: 15px; }
+  .cta b { width: 38px; height: 38px; border-radius: 50%; background: var(--color-ink); color: var(--color-paper); display: grid; place-items: center; transition: transform 300ms var(--ease-out-expo); }
+  .cta:hover b { transform: translateX(3px); }
+</style>
+</head>
+<body>
+<section class="gallery" data-block>
+  <div class="head">
+    <div>
+      <p class="eyebrow" data-slot="eyebrow">Archive · SS26</p>
+      <h2 data-slot="headline">Pieces we keep</h2>
+    </div>
+    <p class="count">06 pieces</p>
+  </div>
+  <div class="grid">
+    <figure class="card" style="--ph: linear-gradient(160deg, #2b2320, #7a4a33)"><div class="frame"><img data-slot-src="image_1" alt="" loading="lazy" /></div><figcaption><span data-slot="caption_1">Field jacket, waxed cotton</span><span>01</span></figcaption></figure>
+    <figure class="card" style="--ph: linear-gradient(200deg, #1c2228, #4f6470)"><div class="frame"><img data-slot-src="image_2" alt="" loading="lazy" /></div><figcaption><span data-slot="caption_2">Studio, north light</span><span>02</span></figcaption></figure>
+    <figure class="card" style="--ph: linear-gradient(140deg, #3a1d10, #ff7a3d)"><div class="frame"><img data-slot-src="image_3" alt="" loading="lazy" /></div><figcaption><span data-slot="caption_3">Ember knit</span><span>03</span></figcaption></figure>
+    <figure class="card" style="--ph: linear-gradient(180deg, #232018, #8c8065)"><div class="frame"><img data-slot-src="image_4" alt="" loading="lazy" /></div><figcaption><span data-slot="caption_4">Linen trouser, stone</span><span>04</span></figcaption></figure>
+    <figure class="card" style="--ph: linear-gradient(120deg, #15151a, #3c3a52)"><div class="frame"><img data-slot-src="image_5" alt="" loading="lazy" /></div><figcaption><span data-slot="caption_5">Night shoot, Lisbon</span><span>05</span></figcaption></figure>
+    <figure class="card" style="--ph: linear-gradient(170deg, #2a2522, #c9b9a3)"><div class="frame"><img data-slot-src="image_6" alt="" loading="lazy" /></div><figcaption><span data-slot="caption_6">Overshirt, undyed</span><span>06</span></figcaption></figure>
+  </div>
+  <div class="end"><a class="cta" href="#"><span data-slot="cta_label">View the archive</span><b aria-hidden="true">→</b></a></div>
+</section>
+<script type="module">
+  const cards = [...document.querySelectorAll(".card")];
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const RAMP = 0.6; // fraction of the viewport over which a card grows in and shrinks out
+
+  function update() {
+    const vh = innerHeight;
+    // When everything already fits (e.g. an auto-height preview frame) there is nothing to reveal.
+    const static_ = reduce || document.documentElement.scrollHeight <= vh + 1;
+    for (const card of cards) {
+      let s = 1;
+      if (!static_) {
+        const r = card.getBoundingClientRect();
+        const enter = (vh - r.top) / (vh * RAMP);
+        const exit = r.bottom / (vh * RAMP);
+        s = Math.max(0, Math.min(1, enter, exit));
+      }
+      card.style.setProperty("--s", s.toFixed(4));
+      card.style.setProperty("--o", Math.min(1, s * 1.4).toFixed(3));
+    }
+  }
+  let queued = false;
+  const schedule = () => { if (!queued) { queued = true; requestAnimationFrame(() => { queued = false; update(); }); } };
+  addEventListener("scroll", schedule, { passive: true });
+  addEventListener("resize", schedule, { passive: true });
+  update();
+</script>
+</body>
+</html>

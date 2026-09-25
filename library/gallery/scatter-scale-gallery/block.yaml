@@ -1,0 +1,112 @@
+slug: scatter-scale-gallery
+name: Scatter Scale Gallery
+category: gallery
+tone: dark
+moods: [editorial, bold]
+tier: pro
+targets: [html, react, next]
+summary: >-
+  Dark archive gallery with six images scattered across a 12-column grid; each card grows in from a
+  corner as it enters the viewport and shrinks away as it leaves, ending on a single pill CTA.
+
+tokens:
+  colors:
+    ink: "#0b0b0c"
+    paper: "#f2efe8"
+    muted: "#8a877f"
+    ember: "#ff5a1f"
+  fonts:
+    - { family: Instrument Serif, weights: [400], role: display }
+    - { family: Geist, weights: [400, 500], role: body }
+  radii:
+    pill: "999px"
+  easings:
+    out-expo: "cubic-bezier(0.16, 1, 0.3, 1)"
+
+slots:
+  - { key: eyebrow, label: Üst etiket, type: text, default: "Archive · SS26" }
+  - { key: headline, label: Başlık, type: text, default: Pieces we keep }
+  - { key: cta_label, label: Buton metni, type: text, default: View the archive }
+  - { key: caption_1, label: 1. görsel yazısı, type: text, default: "Field jacket, waxed cotton" }
+  - { key: caption_2, label: 2. görsel yazısı, type: text, default: "Studio, north light" }
+  - { key: caption_3, label: 3. görsel yazısı, type: text, default: Ember knit }
+  - { key: caption_4, label: 4. görsel yazısı, type: text, default: "Linen trouser, stone" }
+  - { key: caption_5, label: 5. görsel yazısı, type: text, default: "Night shoot, Lisbon" }
+  - { key: caption_6, label: 6. görsel yazısı, type: text, default: "Overshirt, undyed" }
+  - { key: image_1, label: 1. görsel, type: image, default: "", usage: "card 1, portrait 4:5" }
+  - { key: image_2, label: 2. görsel, type: image, default: "", usage: "card 2, landscape 5:4" }
+  - { key: image_3, label: 3. görsel, type: image, default: "", usage: "card 3, portrait 4:5" }
+  - { key: image_4, label: 4. görsel, type: image, default: "", usage: "card 4, portrait 4:5" }
+  - { key: image_5, label: 5. görsel, type: image, default: "", usage: "card 5, landscape 5:4" }
+  - { key: image_6, label: 6. görsel, type: image, default: "", usage: "card 6, portrait 4:5" }
+
+structure: |
+  `<section>` background `--color-ink`, text `--color-paper`, top corners rounded 28px,
+  `overflow: hidden`, `padding: 96px 40px 120px` (20px sides below 768px). It is meant to follow a
+  hero and slide over it, so it has no top margin.
+
+  **Head** (space-between, items-end, wraps): left column **{{eyebrow}}** (Geist 500, 13px,
+  uppercase, letter-spacing .14em, muted) above `<h2>` **{{headline}}** (margin-top 14px,
+  Instrument Serif 400, `font-size: clamp(3rem, 8vw, 8rem)`, line-height .9, letter-spacing
+  -0.03em, max-width 10ch); right `06 pieces` (14px, muted, tabular).
+
+  **Scatter grid** (margin-top 72px, 12 columns, column-gap 20px, row-gap 56px). Six `<figure>`
+  cards, each an image frame (radius 14px, `overflow: hidden`, `object-fit: cover`) with a caption
+  row under it (margin-top 12px, 13px, space-between: the caption slot on the left, a muted
+  tabular index `01`…`06` on the right). Placement, extra top margin, aspect ratio and
+  `transform-origin` per card:
+  1. columns 1–4, 0px, 4:5, right bottom — **{{caption_1}}**, `image_1`
+  2. columns 7–11, 140px, 5:4, left bottom — **{{caption_2}}**, `image_2`
+  3. columns 3–5, 0px, 4:5, right bottom — **{{caption_3}}**, `image_3`
+  4. columns 8–11, 60px, 4:5, left top — **{{caption_4}}**, `image_4`
+  5. columns 1–5, 40px, 5:4, right top — **{{caption_5}}**, `image_5`
+  6. columns 8–10, 180px, 4:5, left bottom — **{{caption_6}}**, `image_6`
+  Below 768px: 6 columns, odd cards span 1–5, even cards 2–6, no extra offsets, row-gap 40px.
+
+  **Scroll scale** (one passive scroll/resize listener, coalesced into one rAF): for each card
+  `enter = (vh - rect.top) / (vh × 0.6)`, `exit = rect.bottom / (vh × 0.6)`,
+  `scale = clamp(min(enter, exit), 0, 1)`, `opacity = min(1, scale × 1.4)`, written to the CSS
+  variables `--s` / `--o` that drive `transform: scale(var(--s))` and `opacity`. Cards grow in from
+  their own corner and shrink away the same way when scrolled past. If the document cannot scroll
+  (it already fits the viewport) or with reduced motion, every card stays at scale 1.
+
+  **Image fallback**: each frame has its own diagonal gradient placeholder (1: `#2b2320 → #7a4a33`,
+  2: `#1c2228 → #4f6470`, 3: `#3a1d10 → #ff7a3d`, 4: `#232018 → #8c8065`, 5: `#15151a → #3c3a52`,
+  6: `#2a2522 → #c9b9a3`) with a faint 115° hatch
+  (`repeating-linear-gradient(white/.05 0 2px, transparent 2px 14px)`) that disappears once an image
+  is set. Images load lazily.
+
+  **End** (margin-top 120px, centred): pill CTA height 56px, `padding: 0 10px 0 26px`,
+  `--color-paper` fill, ink text, Geist 500 15px, **{{cta_label}}** then a 38px ink circle with `→`
+  that shifts 3px right on hover (300ms `--ease-out-expo`).
+
+parameters: |
+  - Section padding 96px 40px 120px, radius 28px 28px 0 0
+  - Grid 12 cols, gap 20px × 56px (6 cols, 40px rows below 768px); offsets 0/140/0/60/40/180px
+  - Scale ramp 0.6 × viewport height for enter and exit; opacity = min(1, 1.4 × scale)
+  - Frame radius 14px; captions 13px; CTA height 56px
+
+variants:
+  react: |
+    Keep the card elements in a ref array and write `--s`/`--o` with `style.setProperty` from the
+    rAF callback; never store scale in React state. A GSAP ScrollTrigger version is fine if the
+    project already uses GSAP, with the same enter/exit formulas.
+  next: |
+    Use `next/image` with `fill` inside each frame (`sizes` matching the column span) and keep the
+    scroll logic in a small client component that receives the card refs.
+
+demo:
+  eyebrow: "Studio · Selected work"
+  headline: Built and imagined
+  caption_1: "Terminal, aerial at dusk"
+  caption_2: Bow wave
+  caption_3: Canopy house
+  caption_4: Forest atrium
+  caption_5: Night walker
+  caption_6: Night garden
+  image_1: terminal.webp
+  image_2: bow-wave.webp
+  image_3: canopy-house.webp
+  image_4: atrium.webp
+  image_5: night-walker.webp
+  image_6: night-garden.webp

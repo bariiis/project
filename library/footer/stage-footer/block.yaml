@@ -1,0 +1,111 @@
+slug: stage-footer
+name: Stage Footer
+category: footer
+tone: dark
+moods: [cinematic, bold]
+tier: pro
+targets: [html, react, next]
+summary: >-
+  One-screen closing scene: a looping video (or animated ember field) rises from the bottom under
+  an ink fade, a blurred-in serif call to action with a pulsing dot, a hairline link row, and a
+  giant wordmark whose letters slide in from the left, with a lagging glass cursor label.
+
+tokens:
+  colors:
+    ink: "#0b0b0c"
+    paper: "#f2efe8"
+    muted: "#8a877f"
+    ember: "#ff5a1f"
+    hairline: "rgb(242 239 232 / 0.14)"
+  fonts:
+    - { family: Instrument Serif, weights: [400], role: display }
+    - { family: Instrument Serif, weights: [400], role: display, italic: true }
+    - { family: Geist, weights: [400, 500], role: body }
+  radii:
+    pill: "999px"
+  easings:
+    out-expo: "cubic-bezier(0.16, 1, 0.3, 1)"
+    reveal: "cubic-bezier(0.05, 0.9, 0.1, 1)"
+
+slots:
+  - { key: headline, label: Başlık, type: text, default: "Let’s build the next one together" }
+  - { key: cta_label, label: Buton metni, type: text, default: Start a project }
+  - { key: left_title, label: Sol başlık, type: text, default: Stay in the loop }
+  - { key: right_title, label: Sağ başlık (italik), type: text, default: "Made slowly, shipped often." }
+  - { key: copyright, label: Telif satırı, type: text, default: "© 2026 Northwind" }
+  - { key: brand, label: Dev yazı (marka), type: text, default: Northwind }
+  - { key: cursor_label, label: İmleç etiketi, type: text, default: Say hello }
+  - { key: bg_video, label: Arka plan videosu, type: video, default: "", usage: looping background in the lower 88% of the footer }
+
+structure: |
+  `<footer>` height `100svh`, min-height `36rem`, `overflow: hidden`, `isolation: isolate`,
+  background `--color-ink`, text `--color-paper`. Side padding 32px (20px below 768px). The page
+  itself keeps scrolling; only this section is a fixed-height scene.
+
+  **Media** (`z-index: -2`): an absolutely positioned box `left: 0; right: 0; bottom: 0;
+  height: 88%` holding the `bg_video` asset, `object-fit: cover`, `muted loop playsinline`,
+  `preload="auto"`, started with `play()` (ignore rejection). **Fallback** with no video: a
+  canvas at half resolution filled `--color-ink` with three drifting radial blobs
+  (`rgba(255,90,31,.55)`, `rgba(255,140,70,.55)`, `rgba(120,40,12,.55)`, radii 0.55/0.5/0.6 of the
+  width), each centre orbiting by ±8% X on a 4.2s-scaled sine and ±6% Y on a 5.2s-scaled cosine.
+  The same fallback takes over if a given video fires `error` (unreachable or undecodable).
+
+  **Fade** (`z-index: -1`): `linear-gradient(to bottom, ink 0%, ink 14%, ink/.6 34%, ink/0 58%,
+  ink/.35 100%)` so the media melts into the page above.
+
+  **Head** (centred column, `top: 7vh`, width `min(92%, 1000px)`, gap 32px):
+  - `<h2>` **{{headline}}**, Instrument Serif 400, `font-size: clamp(2.2rem, 4.4vw, 4.2rem)`,
+    line-height 1.04, letter-spacing -0.02em. Each word sits in an `overflow: hidden` mask
+    (padding-bottom 0.12em) and goes from `translateY(105%)`, `blur(16px)`, opacity 0 to rest
+    over 1200ms `--ease-reveal` (opacity 600ms), 90ms stagger.
+  - a pill `padding: 18px 30px`, `--color-ink` fill, 1px `--color-hairline` border, Geist 500
+    16px: **{{cta_label}}** then a 9px `--color-ember` dot. The dot pulses (2s ease-in-out
+    infinite: opacity .55 → 1, scale .85 → 1.1 with a 12px ember glow at the peak) and its
+    `::after` ring (inset -5px, `rgb(255 90 31 / .45)`) expands `scale(.6 → 2.3)` while fading
+    out on the same 2s loop. Hover inverts to paper/ink and lifts 2px (300ms `--ease-out-expo`).
+
+  **Link row** (vertically centred at 52%):
+  - top line, space-between, Instrument Serif `clamp(1.1rem, 1.6vw, 1.5rem)`:
+    **{{left_title}}** and italic **{{right_title}}**;
+  - a 1px `--color-hairline` rule with 22px margins;
+  - bottom line, space-between, 14px: nav `Work · Studio · Journal · Contact` (gap 40px, hover
+    opacity .7) and **{{copyright}}** at `rgb(242 239 232 / .5)`. Stacked below 768px.
+
+  **Wordmark** **{{brand}}**, centred 18px above the bottom edge, Instrument Serif 400,
+  line-height 0.8, letter-spacing -0.035em, one line: size it to
+  `min(21vw, fit-to-inner-width)` (measure at 100px, scale proportionally, re-fit on resize and
+  after fonts load). Each letter has its own `overflow: hidden` mask and slides from
+  `translateX(-105%)`, `blur(18px)`, opacity 0 to opacity .96 over 1200ms `--ease-reveal`,
+  starting 400ms after the section is 35% visible, 80ms per letter. The headline reveal uses the
+  same trigger.
+
+  **Cursor** (only `(hover: hover)` devices, only inside the footer): a 44px ring
+  (1.5px `rgb(242 239 232 / .45)`) that follows the pointer exactly, and a glass label
+  **{{cursor_label}}** (padding 10px 20px, pill, `rgb(242 239 232 / .08)` fill, 1px
+  `rgb(242 239 232 / .18)` border, `backdrop-filter: blur(12px)`, Geist 500 12px uppercase,
+  letter-spacing .08em, `--color-ember` text) that trails it with lerp 0.08. A shared scale lerps
+  toward its target at 0.15: 1 while the pointer is in the footer, 0 when it leaves. Over the pill
+  the label scales to 0 and the ring grows to 1.6×. Keep the native cursor visible.
+
+  **Reduced motion:** no word/letter motion, no dot pulse, fallback canvas drawn once, video
+  paused on its first frame.
+
+parameters: |
+  - Media height 88% · fade stops 0/14/34/58/100%
+  - Headline words 1200ms reveal curve, blur 16px, stagger 90ms · wordmark letters 1200ms, blur 18px, delay 400ms + 80ms × i, threshold 0.35
+  - Wordmark size min(21vw, fit), line-height 0.8, bottom 18px
+  - Dot pulse 2s, ring scale 0.6 → 2.3 · pill padding 18px 30px
+  - Cursor ring 44px, label lerp 0.08, scale lerp 0.15, ring ×1.6 over the pill
+  - Side padding 32px (20px < 768px)
+
+variants:
+  react: |
+    Split the headline and wordmark in render (one span per word/letter) instead of rewriting
+    innerHTML, drive the reveal with `framer-motion` `whileInView`, and keep the cursor loop in a
+    `useEffect` with refs so it never re-renders per frame.
+  next: |
+    The footer is a client component rendered from `app/layout.tsx`; lazy-start the video only when
+    the footer is within one viewport of the screen.
+
+demo:
+  bg_video: night-garden.mp4
